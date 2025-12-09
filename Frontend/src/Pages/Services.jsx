@@ -4,20 +4,25 @@ function Services() {
   const services = [
     {
       id: 1,
-      title: "Head Spa Classique",
+      title: "Kodomo ~ 子ども",
       description:
         "Massage du cuir chevelu, soin du visage et relaxation complète pour un moment de détente absolu.",
-      duration: "60 min",
-      price: "75€",
-      features: ["Massage du cuir chevelu", "Soin du visage", "Relaxation"],
+      duration: "45min",
+      price: "50€",
+      features: [
+        "Massage du cuir chevelu",
+        "Soin du visage",
+        "Relaxation",
+        "Cuir chevelu et visage",
+      ],
     },
     {
       id: 2,
-      title: "Head Spa Premium",
+      title: "Nagomi ~ 和み",
       description:
         "Expérience complète avec soin profond, masque hydratant et massage aux huiles essentielles japonaises.",
-      duration: "90 min",
-      price: "110€",
+      duration: "60 min",
+      price: "100€",
       features: [
         "Massage du cuir chevelu",
         "Soin visage premium",
@@ -27,12 +32,17 @@ function Services() {
     },
     {
       id: 3,
-      title: "Head Spa Détente",
+      title: "Takumi ~ 匠",
       description:
         "Soin express pour une pause bien-être rapide, idéal pour une détente en milieu de journée.",
-      duration: "45 min",
-      price: "60€",
-      features: ["Massage du cuir chevelu", "Soin express"],
+      duration: "90 min",
+      price: "120€",
+      features: [
+        "Massage du cuir chevelu",
+        "Soin express",
+        "Cuir chevelu",
+        "Relaxation",
+      ],
     },
   ];
 
@@ -59,7 +69,7 @@ function Services() {
             <div className="w-24 h-1.5 bg-gradient-to-r from-[#f0cfcf] to-[#e0bfbf] mx-auto mb-8 rounded-full"></div>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Découvrez l'art du head spa japonais, un rituel de bien-être
-              unique combinant massage du cuir chevelu et soin du visage pour
+              unique impliquant le cuir chevelu pour
               une détente totale.
             </p>
           </div>
@@ -74,22 +84,12 @@ function Services() {
                 animationDelay: `${index * 100}ms`,
               }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#f0cfcf]/0 to-[#e0bfbf]/0 group-hover:from-[#f0cfcf]/5 group-hover:to-[#e0bfbf]/5 transition-all duration-500"></div>
-
               <div className="relative p-8">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="text-5xl group-hover:scale-110 transition-transform duration-300">
-                    💆‍♀️
-                  </div>
-                  {service.id === 6 && (
-                    <span className="bg-gradient-to-r from-[#f0cfcf] to-[#e0bfbf] text-white text-xs font-bold px-3 py-1 rounded-full">
-                      POPULAIRE
-                    </span>
-                  )}
-                </div>
-
-                <h3 className="text-2xl font-bold text-[#8b6f6f] mb-4 group-hover:text-[#f0cfcf] transition-colors">
-                  {service.title}
+                <h3 className="text-xl text-center font-bold text-[#8b6f6f] mb-4 group-hover:text-[#f0cfcf] transition-colors">
+                  Head Spa <br />
+                  <span className="text-2xl text-[#8b6f6f]">
+                    {service.title}
+                  </span>
                 </h3>
                 <p className="text-gray-600 mb-6 leading-relaxed min-h-[60px]">
                   {service.description}

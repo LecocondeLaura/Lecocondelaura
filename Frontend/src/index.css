@@ -7,3 +7,18 @@
     font-family: "Alex Brush", cursive;
   }
 }
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}

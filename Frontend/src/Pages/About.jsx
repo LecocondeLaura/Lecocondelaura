@@ -14,7 +14,7 @@ function About() {
                 À propos
               </span>
             </div>
-            <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-[#8b6f6f] mb-6 leading-tight font-alex-brush">
+            <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-[#8b6f6f] mb-6 leading-tight">
               Le cocon
               <br />
               <span className="text-5xl sm:text-6xl md:text-7xl text-[#f0cfcf]">
@@ -37,7 +37,7 @@ function About() {
               offrir un moment de relaxation profonde et de régénération.
             </p>
             <p className="text-lg text-gray-600 leading-relaxed">
-              Notre approche combine massage du cuir chevelu, soin du visage et
+              Notre approche combine massage du cuir chevelu avec des
               techniques de relaxation pour une expérience de bien-être
               complète. Chaque rituel est personnalisé selon vos besoins et vos
               préférences.
