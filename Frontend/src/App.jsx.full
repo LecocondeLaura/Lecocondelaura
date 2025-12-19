@@ -1,0 +1,126 @@
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./Home";
+import About from "./Pages/About";
+import Contact from "./Pages/Contact";
+import Services from "./Pages/Services";
+import Login from "./Pages/Login";
+import Dashboard from "./Pages/Dashboard";
+import Clients from "./Pages/Clients";
+import GiftCards from "./Pages/GiftCards";
+import Agenda from "./Pages/Agenda";
+import Header from "./Components/Nav/Header";
+import Footer from "./Components/Nav/Footer";
+import ProtectedRoute from "./Components/ProtectedRoute";
+import MentionsLegales from "./Pages/MentionsLegales";
+import PolitiqueConfidentialite from "./Pages/PolitiqueConfidentialite";
+import ComingSoon from "./Pages/ComingSoon";
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Route "Ouverture prochainement" - Page d'accueil temporaire */}
+        <Route path="/" element={<ComingSoon />} />
+        {/* Route Home (pour plus tard, quand le site sera prêt) */}
+        <Route
+          path="/home"
+          element={
+            <>
+              <Header />
+              <Home />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/about"
+          element={
+            <>
+              <Header />
+              <About />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/contact"
+          element={
+            <>
+              <Header />
+              <Contact />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/services"
+          element={
+            <>
+              <Header />
+              <Services />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/mentions-legales"
+          element={
+            <>
+              <Header />
+              <MentionsLegales />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/politique-confidentialite"
+          element={
+            <>
+              <Header />
+              <PolitiqueConfidentialite />
+              <Footer />
+            </>
+          }
+        />
+        {/* Route de login (sans Header/Footer) */}
+        <Route path="/login" element={<Login />} />
+        {/* Routes protégées Dashboard (sans Header/Footer) */}
+        <Route
+          path="/dashboard/agenda"
+          element={
+            <ProtectedRoute>
+              <Agenda />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/cartes-cadeaux"
+          element={
+            <ProtectedRoute>
+              <GiftCards />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/clients"
+          element={
+            <ProtectedRoute>
+              <Clients />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;

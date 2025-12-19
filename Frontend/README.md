@@ -1,3 +1,27 @@
+# Le Cocon de Laura - Frontend
+
+## 🚧 État actuel : Mode "Coming Soon"
+
+**Le site est actuellement en mode "Coming Soon" uniquement.**
+
+- Seule la page `ComingSoon.jsx` est chargée
+- Taille du bundle réduite : ~195 KB (au lieu de 356 KB)
+- Toutes les autres pages sont désactivées pour réduire la taille
+
+### Pour activer le site complet :
+
+1. Remplacez `src/App.jsx` par `src/App.jsx.full` :
+
+   ```bash
+   mv src/App.jsx.full src/App.jsx
+   ```
+
+2. Ou restaurez manuellement toutes les routes dans `App.jsx`
+
+3. Poussez les changements sur GitHub (Vercel redéploiera automatiquement)
+
+---
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

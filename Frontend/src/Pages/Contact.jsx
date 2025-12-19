@@ -20,6 +20,7 @@ function Contact() {
   const [isLoading, setIsLoading] = useState(false);
   const [availableTimes, setAvailableTimes] = useState([]);
   const [showSundayAlert, setShowSundayAlert] = useState(false);
+  const [carteCadeaux, setCarteCadeaux] = useState(false);
 
   const allTimes = [
     "09:00",
@@ -61,7 +62,22 @@ function Contact() {
   }, [formData.date, formData.heure]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+
+    // Gérer la checkbox carte cadeaux
+    if (name === "carteCadeaux") {
+      setCarteCadeaux(checked);
+      // Si on coche la carte cadeaux, on vide date et heure
+      if (checked) {
+        setFormData((prev) => ({
+          ...prev,
+          date: "",
+          heure: "",
+        }));
+        setAvailableTimes([]);
+      }
+      return;
+    }
 
     // Vérifier si la date sélectionnée est un dimanche
     if (name === "date" && value) {
@@ -93,34 +109,46 @@ function Contact() {
     setIsLoading(true);
 
     try {
-      // Vérifier que ce n'est pas un dimanche
-      const selectedDate = new Date(formData.date);
-      const dayOfWeek = selectedDate.getDay();
-      if (dayOfWeek === 0) {
-        setShowSundayAlert(true);
-        setIsLoading(false);
-        // Masquer la popup après 4 secondes
-        setTimeout(() => {
-          setShowSundayAlert(false);
-        }, 4000);
-        return;
-      }
+      // Si ce n'est pas une carte cadeaux, vérifier la date et l'heure
+      if (!carteCadeaux) {
+        // Vérifier que ce n'est pas un dimanche
+        const selectedDate = new Date(formData.date);
+        const dayOfWeek = selectedDate.getDay();
+        if (dayOfWeek === 0) {
+          setShowSundayAlert(true);
+          setIsLoading(false);
+          // Masquer la popup après 4 secondes
+          setTimeout(() => {
+            setShowSundayAlert(false);
+          }, 4000);
+          return;
+        }
 
-      // Vérifier que le créneau est toujours disponible
-      const available = await getAvailableTimesForDate(formData.date, allTimes);
-      if (!available.includes(formData.heure)) {
-        alert(
-          "Ce créneau n'est plus disponible. Veuillez choisir un autre horaire."
+        // Vérifier que le créneau est toujours disponible
+        const available = await getAvailableTimesForDate(
+          formData.date,
+          allTimes
         );
-        setIsLoading(false);
-        return;
+        if (!available.includes(formData.heure)) {
+          alert(
+            "Ce créneau n'est plus disponible. Veuillez choisir un autre horaire."
+          );
+          setIsLoading(false);
+          return;
+        }
       }
 
-      await addAppointment(formData);
+      // Préparer les données à envoyer
+      const dataToSend = {
+        ...formData,
+        carteCadeaux: carteCadeaux,
+      };
+
+      await addAppointment(dataToSend);
 
       setIsSubmitted(true);
 
-      // Réinitialiser le formulaire après 5 secondes
+      // Réinitialiser le formulaire après 10 secondes
       setTimeout(() => {
         setIsSubmitted(false);
         setFormData({
@@ -133,6 +161,7 @@ function Contact() {
           heure: "",
           message: "",
         });
+        setCarteCadeaux(false);
         setAvailableTimes([]);
       }, 10000);
     } catch (error) {
@@ -300,8 +329,9 @@ function Contact() {
                     Demande envoyée !
                   </h2>
                   <p className="text-gray-600 text-lg max-w-md mx-auto">
-                    Nous vous contacterons très prochainement pour confirmer
-                    votre rendez-vous.
+                    {carteCadeaux
+                      ? "Nous vous contacterons très prochainement concernant votre demande de carte cadeaux."
+                      : "Nous vous contacterons très prochainement pour confirmer votre rendez-vous."}
                   </p>
                 </div>
               ) : (
@@ -406,67 +436,90 @@ function Contact() {
                         </option>
                       ))}
                     </select>
+
+                    {/* Checkbox Carte Cadeaux - affichée uniquement si un service est sélectionné */}
+                    {formData.service && (
+                      <div className="mt-4 flex items-center">
+                        <input
+                          type="checkbox"
+                          id="carteCadeaux"
+                          name="carteCadeaux"
+                          checked={carteCadeaux}
+                          onChange={handleChange}
+                          className="w-5 h-5 text-[#8b6f6f] border-2 border-gray-300 rounded focus:ring-2 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] cursor-pointer"
+                        />
+                        <label
+                          htmlFor="carteCadeaux"
+                          className="ml-3 text-sm font-semibold text-gray-700 cursor-pointer"
+                        >
+                          CARTE CADEAUX
+                        </label>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="group">
-                      <label
-                        htmlFor="date"
-                        className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
-                      >
-                        Date souhaitée *
-                      </label>
-                      <input
-                        type="date"
-                        id="date"
-                        name="date"
-                        value={formData.date}
-                        onChange={handleChange}
-                        required
-                        min={new Date().toISOString().split("T")[0]}
-                        className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
-                      />
-                    </div>
-                    <div className="group">
-                      <label
-                        htmlFor="heure"
-                        className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
-                      >
-                        Heure souhaitée *
-                      </label>
-                      {formData.date ? (
-                        availableTimes.length > 0 ? (
-                          <select
-                            id="heure"
-                            name="heure"
-                            value={formData.heure}
-                            onChange={handleChange}
-                            required
-                            className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white appearance-none cursor-pointer"
-                          >
-                            <option value="">Sélectionnez une heure</option>
-                            {availableTimes.map((heure, index) => (
-                              <option key={index} value={heure}>
-                                {heure}
-                              </option>
-                            ))}
-                          </select>
+                  {/* Champs Date et Heure - cachés si carte cadeaux est cochée */}
+                  {!carteCadeaux && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="group">
+                        <label
+                          htmlFor="date"
+                          className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
+                        >
+                          Date souhaitée *
+                        </label>
+                        <input
+                          type="date"
+                          id="date"
+                          name="date"
+                          value={formData.date}
+                          onChange={handleChange}
+                          required
+                          min={new Date().toISOString().split("T")[0]}
+                          className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
+                        />
+                      </div>
+                      <div className="group">
+                        <label
+                          htmlFor="heure"
+                          className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
+                        >
+                          Heure souhaitée *
+                        </label>
+                        {formData.date ? (
+                          availableTimes.length > 0 ? (
+                            <select
+                              id="heure"
+                              name="heure"
+                              value={formData.heure}
+                              onChange={handleChange}
+                              required
+                              className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white appearance-none cursor-pointer"
+                            >
+                              <option value="">Sélectionnez une heure</option>
+                              {availableTimes.map((heure, index) => (
+                                <option key={index} value={heure}>
+                                  {heure}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <div className="w-full px-5 py-4 border-2 border-red-200 rounded-xl bg-red-50">
+                              <p className="text-red-600 text-sm font-semibold">
+                                Aucun créneau disponible pour cette date
+                              </p>
+                            </div>
+                          )
                         ) : (
-                          <div className="w-full px-5 py-4 border-2 border-red-200 rounded-xl bg-red-50">
-                            <p className="text-red-600 text-sm font-semibold">
-                              Aucun créneau disponible pour cette date
+                          <div className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-gray-100">
+                            <p className="text-gray-500 text-sm">
+                              Veuillez d'abord sélectionner une date
                             </p>
                           </div>
-                        )
-                      ) : (
-                        <div className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-gray-100">
-                          <p className="text-gray-500 text-sm">
-                            Veuillez d'abord sélectionner une date
-                          </p>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="group">
                     <label
@@ -489,11 +542,17 @@ function Contact() {
                   <div className="pt-4">
                     <button
                       type="submit"
-                      disabled={isLoading || !formData.heure}
-                      className="w-full bg-gradient-to-r from-[#f0cfcf] to-[#e0bfbf] text-white py-5 rounded-xl font-black text-lg uppercase tracking-wide hover:from-[#e0bfbf] hover:to-[#d9b3b3] hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      disabled={
+                        isLoading ||
+                        (!carteCadeaux && !formData.heure) ||
+                        (carteCadeaux && !formData.service)
+                      }
+                      className="w-full bg-[#8b6f6f] text-white py-5 rounded-xl font-black text-lg uppercase tracking-wide hover:bg-[#7a5f5f] hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       {isLoading
                         ? "Envoi en cours..."
+                        : carteCadeaux
+                        ? "Confirmer la demande de carte cadeaux"
                         : "Confirmer la réservation"}
                     </button>
                   </div>

@@ -54,11 +54,6 @@ function Services() {
             <h1 className="text-9xl font-black text-[#f0cfcf]">HEAD SPA</h1>
           </div>
           <div className="relative z-10">
-            <div className="inline-block mb-6">
-              <span className="text-sm font-semibold text-[#f0cfcf] uppercase tracking-wider bg-[#f0cfcf]/10 px-4 py-2 rounded-full">
-                Spécialité
-              </span>
-            </div>
             <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-[#8b6f6f] mb-6 leading-tight">
               Head Spa
               <br />
@@ -69,8 +64,7 @@ function Services() {
             <div className="w-24 h-1.5 bg-gradient-to-r from-[#f0cfcf] to-[#e0bfbf] mx-auto mb-8 rounded-full"></div>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Découvrez l'art du head spa japonais, un rituel de bien-être
-              unique impliquant le cuir chevelu pour
-              une détente totale.
+              unique impliquant le cuir chevelu pour une détente totale.
             </p>
           </div>
         </div>

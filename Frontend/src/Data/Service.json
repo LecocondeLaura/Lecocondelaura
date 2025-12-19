@@ -1,0 +1,56 @@
+[
+  {
+    "id": 0,
+    "title": "Kodomo ~ 子ども",
+    "icon": "🌟",
+    "description": "Massage du cuir chevelu, soin du visage et relaxation complète pour un moment de détente absolu.",
+    "duration": "45min",
+    "color": "from-rose-100/50 to-rose-200/30",
+    "iconBg": "bg-rose-100/50",
+    "price": {
+      "cabinet": 50
+    },
+    "features": [
+      "Massage du cuir chevelu",
+      "Soin du visage",
+      "Relaxation",
+      "Cuir chevelu et visage"
+    ]
+  },
+  {
+    "id": 1,
+    "title": "Nagomi ~ 和み",
+    "icon": "✨",
+    "description": "Expérience complète avec soin profond, masque hydratant et massage aux huiles essentielles japonaises.",
+    "duration": "60min",
+    "color": "from-purple-100/50 to-purple-200/30",
+    "iconBg": "bg-purple-100/50",
+    "price": {
+      "cabinet": 100
+    },
+    "features": [
+      "Massage du cuir chevelu",
+      "Soin visage premium",
+      "Masque hydratant",
+      "Huiles essentielles"
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Takumi ~ 匠",
+    "icon": "🧘",
+    "description": "Soin express pour une pause bien-être rapide, idéal pour une détente en milieu de journée.",
+    "duration": "90min",
+    "color": "from-blue-100/50 to-blue-200/30",
+    "iconBg": "bg-blue-100/50",
+    "price": {
+      "cabinet": 120
+    },
+    "features": [
+      "Massage du cuir chevelu",
+      "Soin express",
+      "Cuir chevelu",
+      "Relaxation"
+    ]
+  }
+]

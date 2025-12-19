@@ -6,6 +6,11 @@ function Header() {
 
   const isActive = (path) => location.pathname === path;
 
+  // Ne pas afficher le Header sur les pages login et dashboard
+  if (location.pathname === "/login" || location.pathname === "/dashboard") {
+    return null;
+  }
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
       <nav className="mx-4 mt-4 bg-[#f0cfcf] backdrop-blur-md rounded-2xl border border-transparent shadow-lg">

@@ -9,11 +9,6 @@ function About() {
             <h1 className="text-9xl font-black text-[#f0cfcf]">LE COCON</h1>
           </div>
           <div className="relative z-10">
-            <div className="inline-block mb-6">
-              <span className="text-sm font-semibold text-[#f0cfcf] uppercase tracking-wider bg-[#f0cfcf]/10 px-4 py-2 rounded-full">
-                À propos
-              </span>
-            </div>
             <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-[#8b6f6f] mb-6 leading-tight">
               Le cocon
               <br />
@@ -37,10 +32,9 @@ function About() {
               offrir un moment de relaxation profonde et de régénération.
             </p>
             <p className="text-lg text-gray-600 leading-relaxed">
-              Notre approche combine massage du cuir chevelu avec des
-              techniques de relaxation pour une expérience de bien-être
-              complète. Chaque rituel est personnalisé selon vos besoins et vos
-              préférences.
+              Notre approche combine massage du cuir chevelu avec des techniques
+              de relaxation pour une expérience de bien-être complète. Chaque
+              rituel est personnalisé selon vos besoins et vos préférences.
             </p>
           </div>
           <div className="bg-gradient-to-br from-[#f0cfcf] to-[#e0bfbf] rounded-3xl p-12 shadow-2xl">
