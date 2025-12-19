@@ -2,7 +2,7 @@ import React from "react";
 import ComingSoon from "./Pages/ComingSoon";
 
 // Version simplifiée : seule la page "Coming Soon" est chargée
-// Pour activer le site complet plus tard, remplacez ce fichier par la version complète
+// Pour activer le site complet plus tard, utilisez App.jsx.full
 function App() {
   return <ComingSoon />;
 }
