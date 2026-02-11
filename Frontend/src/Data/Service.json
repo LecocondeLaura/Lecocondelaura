@@ -1,56 +1,58 @@
 [
   {
-    "id": 0,
-    "title": "Kodomo ~ 子ども",
-    "icon": "🌟",
-    "description": "Massage du cuir chevelu, soin du visage et relaxation complète pour un moment de détente absolu.",
+    "id": 1,
+    "title": "Kodomo",
+    "age": "Enfant (5-13 ans)",
     "duration": "45min",
-    "color": "from-rose-100/50 to-rose-200/30",
-    "iconBg": "bg-rose-100/50",
     "price": {
       "cabinet": 50
     },
     "features": [
-      "Massage du cuir chevelu",
-      "Soin du visage",
-      "Relaxation",
-      "Cuir chevelu et visage"
-    ]
-  },
-  {
-    "id": 1,
-    "title": "Nagomi ~ 和み",
-    "icon": "✨",
-    "description": "Expérience complète avec soin profond, masque hydratant et massage aux huiles essentielles japonaises.",
-    "duration": "60min",
-    "color": "from-purple-100/50 to-purple-200/30",
-    "iconBg": "bg-purple-100/50",
-    "price": {
-      "cabinet": 100
-    },
-    "features": [
-      "Massage du cuir chevelu",
-      "Soin visage premium",
-      "Masque hydratant",
-      "Huiles essentielles"
+      "Diagnostic",
+      "Massage aux 3 brosses",
+      "Gestes relaxants inspirés du Head Spa Japonais",
+      "Lotion nettoyante",
+      "Séchage sans brushing"
     ]
   },
   {
     "id": 2,
-    "title": "Takumi ~ 匠",
-    "icon": "🧘",
-    "description": "Soin express pour une pause bien-être rapide, idéal pour une détente en milieu de journée.",
-    "duration": "90min",
-    "color": "from-blue-100/50 to-blue-200/30",
-    "iconBg": "bg-blue-100/50",
+    "title": "Rituel Détente",
+    "age": "Adulte",
+    "icon": "✨",
+    "duration": "60min",
+    "color": "from-purple-100/50 to-purple-200/30",
+    "iconBg": "bg-purple-100/50",
     "price": {
       "cabinet": 120
     },
     "features": [
-      "Massage du cuir chevelu",
-      "Soin express",
-      "Cuir chevelu",
-      "Relaxation"
+      "Diagnostic",
+      "Massage aux 3 brosses",
+      "Gestes relaxants inspirés du Head Spa Japonais",
+      "Bain sous vapeur",
+      "Lotion nettoyante",
+      "Séchage sans brushing"
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Rituel Ultime",
+    "age": "Adulte",
+    "icon": "🧘",
+    "duration": "90min",
+    "color": "from-blue-100/50 to-blue-200/30",
+    "iconBg": "bg-blue-100/50",
+    "price": {
+      "cabinet": 140
+    },
+    "features": [
+      "Diagnostic",
+      "Massage aux 3 brosses",
+      "Gestes relaxants inspirés du Head Spa Japonais",
+      "Bain sous vapeur",
+      "Lotion nettoyante",
+      "Séchage sans brushing"
     ]
   }
 ]

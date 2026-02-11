@@ -68,7 +68,7 @@ router.get("/", authenticateToken, async (req, res) => {
           email: client.email,
         })
           .sort({ date: -1, heure: -1 })
-          .select("date heure service status carteCadeaux createdAt");
+          .select("date heure service status carteCadeaux carteCadeauEnvoyee carteCadeauUtilisee createdAt");
 
         return {
           ...client,
@@ -113,7 +113,7 @@ router.get("/:email", authenticateToken, async (req, res) => {
       email: email.toLowerCase(),
     })
       .sort({ date: -1, heure: -1 })
-      .select("date heure service status carteCadeaux createdAt");
+      .select("date heure service status carteCadeaux carteCadeauEnvoyee carteCadeauUtilisee createdAt");
 
     res.json({
       success: true,

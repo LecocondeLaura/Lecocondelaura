@@ -6,6 +6,30 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const ASSETS_DIR = path.join(__dirname, "..", "assets");
+const CUSTOM_CARD_NAMES = ["carte-cadeau.png", "carte-cadeau.jpg", "carte-cadeau.jpeg"];
+
+/**
+ * Retourne l'image personnalisée de la carte cadeau si elle existe (dossier Backend/assets).
+ * À remplir avec l'image envoyée par Laura : placer le fichier dans Backend/assets/carte-cadeau.png (ou .jpg).
+ * @returns {{ buffer: Buffer, filename: string, contentType: string } | null}
+ */
+export const getCustomGiftCardImage = () => {
+  for (const name of CUSTOM_CARD_NAMES) {
+    const filePath = path.join(ASSETS_DIR, name);
+    if (fs.existsSync(filePath)) {
+      const ext = path.extname(name).toLowerCase();
+      const contentType = ext === ".png" ? "image/png" : "image/jpeg";
+      return {
+        buffer: fs.readFileSync(filePath),
+        filename: name,
+        contentType,
+      };
+    }
+  }
+  return null;
+};
+
 /**
  * Génère un PDF de carte cadeaux élégant
  * @param {Object} appointment - Les données du rendez-vous/carte cadeaux

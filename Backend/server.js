@@ -6,6 +6,9 @@ import appointmentRoutes from "./routes/appointments.js";
 import reviewRoutes from "./routes/reviews.js";
 import authRoutes from "./routes/auth.js";
 import clientRoutes from "./routes/clients.js";
+import notificationRoutes from "./routes/notifications.js";
+import closureRoutes from "./routes/closures.js";
+import { startFollowUpScheduler } from "./services/followUpScheduler.js";
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -23,6 +26,8 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/clients", clientRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/closures", closureRoutes);
 
 // Route de test
 app.get("/", (req, res) => {
@@ -46,6 +51,9 @@ connectDB().then(() => {
     .listen(PORT, () => {
       console.log(`🚀 Serveur démarré sur le port ${PORT}`);
       console.log(`📍 API disponible sur http://localhost:${PORT}`);
+
+      // Démarrer le planificateur automatique des emails de suivi
+      startFollowUpScheduler();
     })
     .on("error", (err) => {
       if (err.code === "EADDRINUSE") {

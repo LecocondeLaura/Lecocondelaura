@@ -4,17 +4,29 @@ import {
   CreditCardIcon,
   PaperAirplaneIcon,
   CheckCircleIcon,
+  ClockIcon,
+  EnvelopeIcon,
+  PlusIcon,
+  FunnelIcon,
+  ArrowsUpDownIcon,
 } from "@heroicons/react/24/outline";
 import API_BASE_URL from "../config/api.config.js";
 import DashboardLayout from "../Components/Dashboard/DashboardLayout";
-import Toast from "../Components/UI/Toast";
+import CreateGiftCardModal from "../Components/Dashboard/CreateGiftCardModal";
+import { useToast } from "../contexts/ToastContext";
+import { useNotifications } from "../contexts/NotificationContext";
 
 function GiftCards() {
   const [appointments, setAppointments] = useState([]);
+  const [expiringSoon, setExpiringSoon] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [toast, setToast] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const { showSuccess, showError } = useToast();
+  const { refreshNotifications } = useNotifications();
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [sortBy, setSortBy] = useState("status");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -36,6 +48,7 @@ function GiftCards() {
           window.location.href = "/login";
         } else {
           loadAppointments();
+          loadExpiringSoon();
         }
       })
       .catch(() => {
@@ -66,8 +79,56 @@ function GiftCards() {
     }
   };
 
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
+  const loadExpiringSoon = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_BASE_URL}/appointments/gift-cards/expiring-soon`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        setExpiringSoon(data.data || []);
+      }
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des cartes expirant bientôt:",
+        error
+      );
+    }
+  };
+
+  const sendReminder = async (appointmentId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_BASE_URL}/appointments/${appointmentId}/send-reminder`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        showSuccess("Email de relance envoyé avec succès");
+        loadAppointments();
+        loadExpiringSoon();
+        refreshNotifications();
+      } else {
+        showError(data.message || "Erreur lors de l'envoi de la relance");
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'envoi de la relance:", error);
+      showError("Erreur lors de l'envoi de la relance");
+    }
   };
 
   const markPaymentAsDone = async (appointmentId) => {
@@ -81,19 +142,52 @@ function GiftCards() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+          body: JSON.stringify({ paiementEffectue: true }),
         }
       );
 
       const data = await response.json();
       if (data.success) {
         loadAppointments();
-        showToast("Paiement marqué comme effectué", "success");
+        showSuccess("Paiement marqué comme effectué");
+        refreshNotifications();
       } else {
-        showToast("Erreur: " + data.message, "error");
+        showError("Erreur: " + data.message);
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour du paiement:", error);
-      showToast("Erreur lors de la mise à jour du paiement", "error");
+      showError("Erreur lors de la mise à jour du paiement");
+    }
+  };
+
+  const markCarteUtilisee = async (appointmentId) => {
+    const confirmed = window.confirm(
+      "Marquer cette carte cadeau comme utilisée ? (Le client a utilisé sa carte au salon.)"
+    );
+    if (!confirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_BASE_URL}/appointments/${appointmentId}/carte-utilisee`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        loadAppointments();
+        showSuccess("Carte cadeau marquée comme utilisée");
+      } else {
+        showError(data.message || "Erreur lors de la mise à jour");
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      showError("Erreur lors de la mise à jour");
     }
   };
 
@@ -121,13 +215,14 @@ function GiftCards() {
       const data = await response.json();
       if (data.success) {
         loadAppointments();
-        showToast("Carte cadeau envoyée avec succès !", "success");
+        showSuccess("Carte cadeau envoyée avec succès !");
+        refreshNotifications();
       } else {
-        showToast("Erreur: " + data.message, "error");
+        showError("Erreur: " + data.message);
       }
     } catch (error) {
       console.error("Erreur lors de l'envoi de la carte cadeau:", error);
-      showToast("Erreur lors de l'envoi de la carte cadeau", "error");
+      showError("Erreur lors de l'envoi de la carte cadeau");
     }
   };
 
@@ -193,36 +288,111 @@ function GiftCards() {
     });
   }
 
+  // Filtre par statut
+  if (filterStatus) {
+    giftCards = giftCards.filter((gc) => {
+      if (filterStatus === "pending") return !gc.paiementEffectue;
+      if (filterStatus === "paid")
+        return gc.paiementEffectue && !gc.carteCadeauEnvoyee;
+      if (filterStatus === "sent")
+        return gc.carteCadeauEnvoyee && !gc.carteCadeauUtilisee;
+      if (filterStatus === "used") return gc.carteCadeauUtilisee;
+      return true;
+    });
+  }
+
+  // Tri
+  const statusOrder = (gc) => {
+    if (!gc.paiementEffectue) return 0;
+    if (!gc.carteCadeauEnvoyee) return 1;
+    if (!gc.carteCadeauUtilisee) return 2;
+    return 3;
+  };
+
+  giftCards = [...giftCards].sort((a, b) => {
+    if (sortBy === "status") {
+      const diff = statusOrder(a) - statusOrder(b);
+      if (diff !== 0) return diff;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    }
+    if (sortBy === "date-desc")
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    if (sortBy === "date-asc")
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    if (sortBy === "name-asc") {
+      const nameA = `${a.prenom} ${a.nom}`.toLowerCase();
+      const nameB = `${b.prenom} ${b.nom}`.toLowerCase();
+      return nameA.localeCompare(nameB);
+    }
+    if (sortBy === "name-desc") {
+      const nameA = `${a.prenom} ${a.nom}`.toLowerCase();
+      const nameB = `${b.prenom} ${b.nom}`.toLowerCase();
+      return nameB.localeCompare(nameA);
+    }
+    return 0;
+  });
+
+  const handleCreateSuccess = () => {
+    showSuccess("Carte cadeau créée avec succès ! Un email a été envoyé au client.");
+    loadAppointments();
+    loadExpiringSoon();
+    refreshNotifications();
+  };
+
   return (
     <DashboardLayout>
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      <CreateGiftCardModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+      />
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="mb-6">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-[#8b6f6f] mb-2">
-              Cartes cadeaux
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600">
-              Gérez les demandes de cartes cadeaux
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-[#8b6f6f] mb-2">
+                  Cartes cadeaux
+                </h1>
+                <p className="text-sm sm:text-base text-gray-600">
+                  Gérez les demandes de cartes cadeaux
+                </p>
+              </div>
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-[#8b6f6f] text-white rounded-xl font-semibold hover:bg-[#7a5f5f] transition-colors shadow-lg"
+              >
+                <PlusIcon className="w-5 h-5" />
+                <span className="hidden sm:inline">Nouvelle carte cadeau</span>
+                <span className="sm:hidden">Nouvelle</span>
+              </button>
+            </div>
           </div>
 
-          {/* Filtres par mois/année */}
-          <div className="flex flex-wrap gap-4 mb-6 p-4 bg-white rounded-xl shadow-lg border border-gray-100">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-semibold text-gray-700">
-                Mois :
-              </label>
+          {/* Filtres et tri */}
+          <div className="flex flex-wrap items-center gap-4 mb-6 p-4 sm:p-5 bg-white rounded-xl shadow-lg border border-gray-100">
+            <div className="flex items-center gap-2 flex-wrap">
+              <FunnelIcon className="w-5 h-5 text-[#8b6f6f] shrink-0" />
+              <span className="text-sm font-bold text-gray-700 shrink-0">
+                Filtres :
+              </span>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-[#8b6f6f] focus:ring-1 focus:ring-[#f0cfcf] focus:outline-none text-sm font-medium"
+                aria-label="Filtrer par statut"
+              >
+                <option value="">Tous les statuts</option>
+                <option value="pending">En attente de paiement</option>
+                <option value="paid">Payées (à envoyer)</option>
+                <option value="sent">Envoyées (non utilisées)</option>
+                <option value="used">Utilisées</option>
+              </select>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-[#8b6f6f] focus:outline-none text-sm"
+                className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-[#8b6f6f] focus:ring-1 focus:ring-[#f0cfcf] focus:outline-none text-sm"
+                aria-label="Filtrer par mois"
               >
                 <option value="">Tous les mois</option>
                 {months.map((month) => (
@@ -231,15 +401,11 @@ function GiftCards() {
                   </option>
                 ))}
               </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-semibold text-gray-700">
-                Année :
-              </label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-[#8b6f6f] focus:outline-none text-sm"
+                className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-[#8b6f6f] focus:ring-1 focus:ring-[#f0cfcf] focus:outline-none text-sm"
+                aria-label="Filtrer par année"
               >
                 <option value="">Toutes les années</option>
                 {years.map((year) => (
@@ -249,13 +415,34 @@ function GiftCards() {
                 ))}
               </select>
             </div>
-            {(selectedMonth || selectedYear) && (
+            <div className="flex items-center gap-2 flex-wrap sm:ml-auto">
+              <ArrowsUpDownIcon className="w-5 h-5 text-[#8b6f6f] shrink-0" />
+              <span className="text-sm font-bold text-gray-700 shrink-0">
+                Trier :
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-[#8b6f6f] focus:ring-1 focus:ring-[#f0cfcf] focus:outline-none text-sm font-medium"
+                aria-label="Trier par"
+              >
+                <option value="status">Par statut (à traiter → utilisées)</option>
+                <option value="date-desc">Plus récentes d'abord</option>
+                <option value="date-asc">Plus anciennes d'abord</option>
+                <option value="name-asc">Nom A → Z</option>
+                <option value="name-desc">Nom Z → A</option>
+              </select>
+            </div>
+            {(filterStatus || selectedMonth || selectedYear || sortBy !== "status") && (
               <button
+                type="button"
                 onClick={() => {
+                  setFilterStatus("");
                   setSelectedMonth("");
                   setSelectedYear("");
+                  setSortBy("status");
                 }}
-                className="px-4 py-2 text-sm font-semibold text-[#8b6f6f] hover:text-[#7a5f5f] transition-colors"
+                className="px-4 py-2 text-sm font-semibold text-[#8b6f6f] hover:bg-[#f0cfcf]/30 rounded-lg transition-colors"
               >
                 Réinitialiser
               </button>
@@ -292,6 +479,78 @@ function GiftCards() {
               </p>
             </div>
           </div>
+
+          {/* Section des cartes expirant bientôt */}
+          {expiringSoon.length > 0 && (
+            <div className="mb-6 bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <ClockIcon className="w-6 h-6 text-yellow-600" />
+                <h2 className="text-xl font-black text-yellow-800">
+                  Cartes cadeaux expirant bientôt ({expiringSoon.length})
+                </h2>
+              </div>
+              <p className="text-sm text-yellow-700 mb-4">
+                Ces cartes cadeaux expirent dans moins de 3 mois. Envoyez une
+                relance pour rappeler aux clients de les utiliser.
+              </p>
+              <div className="space-y-3">
+                {expiringSoon.map((card) => {
+                  const expirationDate = new Date(card.expirationDate);
+                  const expirationFormatted = expirationDate.toLocaleDateString(
+                    "fr-FR",
+                    {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }
+                  );
+
+                  return (
+                    <div
+                      key={card._id}
+                      className="bg-white rounded-lg p-4 border border-yellow-200"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800">
+                            {card.prenom} {card.nom}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {card.service} • Code: {card.codeCarteCadeau}
+                          </p>
+                          <p className="text-xs text-yellow-700 mt-1">
+                            ⏰ Expire le {expirationFormatted} (
+                            {card.daysUntilExpiration} jour
+                            {card.daysUntilExpiration > 1 ? "s" : ""} restant
+                            {card.daysUntilExpiration > 1 ? "s" : ""})
+                          </p>
+                          {card.relanceEnvoyee && (
+                            <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                              <CheckCircleIcon className="w-3 h-3" />
+                              Relance envoyée le{" "}
+                              {new Date(card.dateRelance).toLocaleDateString(
+                                "fr-FR"
+                              )}
+                            </p>
+                          )}
+                        </div>
+                        {!card.relanceEnvoyee && (
+                          <button
+                            onClick={() => sendReminder(card._id)}
+                            className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg font-semibold hover:bg-yellow-600 transition-colors text-sm whitespace-nowrap"
+                          >
+                            <EnvelopeIcon className="w-4 h-4" />
+                            Envoyer relance
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -340,6 +599,11 @@ function GiftCards() {
                         {giftCard.carteCadeauEnvoyee && (
                           <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-blue-100 text-blue-800 border-blue-200">
                             Carte envoyée
+                          </span>
+                        )}
+                        {giftCard.carteCadeauUtilisee && (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-emerald-100 text-emerald-800 border-emerald-200">
+                            Carte utilisée
                           </span>
                         )}
                       </div>
@@ -392,10 +656,20 @@ function GiftCards() {
                           </span>
                         </button>
                       )}
-                    {giftCard.carteCadeauEnvoyee && (
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm sm:text-base">
-                        <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                        <span>Carte cadeau envoyée</span>
+                    {giftCard.carteCadeauEnvoyee && !giftCard.carteCadeauUtilisee && (
+                      <button
+                        onClick={() => markCarteUtilisee(giftCard._id)}
+                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition-all duration-300 text-sm sm:text-base"
+                        title="Le client a utilisé sa carte au salon"
+                      >
+                        <CheckCircleIcon className="w-5 h-5" />
+                        <span className="sm:inline">Carte utilisée</span>
+                      </button>
+                    )}
+                    {giftCard.carteCadeauEnvoyee && giftCard.carteCadeauUtilisee && (
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 text-sm sm:text-base font-medium">
+                        <CheckCircleIcon className="w-5 h-5" />
+                        <span>Carte utilisée</span>
                       </div>
                     )}
                   </div>

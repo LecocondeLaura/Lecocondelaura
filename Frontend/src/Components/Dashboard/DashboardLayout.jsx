@@ -24,7 +24,7 @@ function DashboardLayout({ children }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fef5f5] via-white to-[#fef5f5] flex">
       {/* Sidebar Desktop */}
-      <div className="hidden md:block">
+      <div className="hidden md:block sticky top-0 self-start h-screen">
         <Sidebar onLogout={handleLogout} onClose={null} />
       </div>
 

@@ -6,15 +6,17 @@ import {
 } from "@heroicons/react/24/outline";
 import API_BASE_URL from "../config/api.config.js";
 import DashboardLayout from "../Components/Dashboard/DashboardLayout";
-import Toast from "../Components/UI/Toast";
+import { useToast } from "../contexts/ToastContext";
+import { useNotifications } from "../contexts/NotificationContext";
 
 function Dashboard() {
   const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState("all");
-  const [toast, setToast] = useState(null);
+  const { showSuccess, showError } = useToast();
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
+  const { refreshNotifications } = useNotifications();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -66,10 +68,6 @@ function Dashboard() {
     }
   };
 
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-  };
-
   const updateReviewStatus = async (reviewId, newStatus) => {
     try {
       const token = localStorage.getItem("token");
@@ -88,17 +86,18 @@ function Dashboard() {
       const data = await response.json();
       if (data.success) {
         loadReviews();
+        refreshNotifications();
         const statusMessages = {
           approved: "Avis approuvé avec succès",
           rejected: "Avis rejeté",
         };
-        showToast(statusMessages[newStatus] || "Statut mis à jour", "success");
+        showSuccess(statusMessages[newStatus] || "Statut mis à jour");
       } else {
-        showToast("Erreur lors de la mise à jour: " + data.message, "error");
+        showError("Erreur lors de la mise à jour: " + data.message);
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour:", error);
-      showToast("Erreur lors de la mise à jour", "error");
+      showError("Erreur lors de la mise à jour");
     }
   };
 
@@ -123,13 +122,14 @@ function Dashboard() {
       const data = await response.json();
       if (data.success) {
         loadReviews();
-        showToast("Avis supprimé avec succès", "success");
+        refreshNotifications();
+        showSuccess("Avis supprimé avec succès");
       } else {
-        showToast("Erreur lors de la suppression: " + data.message, "error");
+        showError("Erreur lors de la suppression: " + data.message);
       }
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
-      showToast("Erreur lors de la suppression", "error");
+      showError("Erreur lors de la suppression");
     }
   };
 
@@ -226,13 +226,6 @@ function Dashboard() {
 
   return (
     <DashboardLayout>
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="mb-6">

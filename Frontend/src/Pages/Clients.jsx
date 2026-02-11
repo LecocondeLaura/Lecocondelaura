@@ -7,17 +7,19 @@ import {
   CalendarIcon,
   XMarkIcon,
   CheckIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import DashboardLayout from "../Components/Dashboard/DashboardLayout";
 import API_BASE_URL from "../config/api.config.js";
-import Toast from "../Components/UI/Toast";
+import { useToast } from "../contexts/ToastContext";
 
 function Clients() {
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedClient, setSelectedClient] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [clientSoinsModal, setClientSoinsModal] = useState(null);
+  const { showSuccess, showError } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
 
   const [editForm, setEditForm] = useState({
@@ -26,10 +28,6 @@ function Clients() {
     preferences: "",
     autresInfos: "",
   });
-
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-  };
 
   const loadClients = useCallback(async () => {
     try {
@@ -47,10 +45,7 @@ function Clients() {
       }
     } catch (error) {
       console.error("Erreur lors du chargement des clients:", error);
-      setToast({
-        message: "Erreur lors du chargement des clients",
-        type: "error",
-      });
+      showError("Erreur lors du chargement des clients");
     } finally {
       setIsLoading(false);
     }
@@ -118,16 +113,16 @@ function Clients() {
 
       const data = await response.json();
       if (data.success) {
-        showToast("Informations client mises à jour avec succès", "success");
+        showSuccess("Informations client mises à jour avec succès");
         setIsEditing(false);
         setSelectedClient(null);
         loadClients();
       } else {
-        showToast(data.message || "Erreur lors de la mise à jour", "error");
+        showError(data.message || "Erreur lors de la mise à jour");
       }
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
-      showToast("Erreur lors de la sauvegarde", "error");
+      showError("Erreur lors de la sauvegarde");
     }
   };
 
@@ -140,6 +135,24 @@ function Clients() {
       preferences: "",
       autresInfos: "",
     });
+  };
+
+  // Récapitulatif des soins uniques (service -> nombre de fois)
+  const getSoinsSummary = (appointments) => {
+    if (!appointments || appointments.length === 0) return [];
+    const countByService = {};
+    appointments.forEach((apt) => {
+      if (apt.carteCadeaux) {
+        const label = "Carte cadeaux";
+        countByService[label] = (countByService[label] || 0) + 1;
+      } else if (apt.service) {
+        countByService[apt.service] = (countByService[apt.service] || 0) + 1;
+      }
+    });
+    return Object.entries(countByService).map(([service, count]) => ({
+      service,
+      count,
+    }));
   };
 
   const formatDate = (dateString) => {
@@ -214,12 +227,117 @@ function Clients() {
 
   return (
     <DashboardLayout>
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+      {/* Modal Soins du client */}
+      {clientSoinsModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-br from-[#f0cfcf] to-[#e0bfbf] p-6 flex items-center justify-between sticky top-0">
+              <h3 className="text-xl font-black text-white flex items-center gap-2">
+                <SparklesIcon className="w-6 h-6" />
+                Soins de {clientSoinsModal.prenom} {clientSoinsModal.nom}
+              </h3>
+              <button
+                onClick={() => setClientSoinsModal(null)}
+                className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors text-white"
+                aria-label="Fermer"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              {clientSoinsModal.appointments && clientSoinsModal.appointments.length > 0 ? (
+                <>
+                  {/* Récapitulatif des soins */}
+                  {getSoinsSummary(clientSoinsModal.appointments).length > 0 && (
+                    <div className="bg-[#fcebeb] rounded-xl p-4">
+                      <p className="text-sm font-bold text-[#8b6f6f] mb-2">Soins choisis</p>
+                      <ul className="space-y-1">
+                        {getSoinsSummary(clientSoinsModal.appointments).map(({ service, count }) => (
+                          <li key={service} className="text-sm text-gray-700 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#8b6f6f]"></span>
+                            {service}
+                            {count > 1 && (
+                              <span className="text-gray-500 text-xs">({count} fois)</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {/* Liste détaillée des rendez-vous */}
+                  <div>
+                    <p className="text-sm font-bold text-[#8b6f6f] mb-3">Historique des rendez-vous</p>
+                    <div className="space-y-2 max-h-80 overflow-y-auto">
+                      {clientSoinsModal.appointments.map((apt, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between gap-2 py-2 px-3 bg-gray-50 rounded-lg border border-gray-100 flex-wrap"
+                        >
+                          <div>
+                            {apt.carteCadeaux ? (
+                              <>
+                                <span className="font-medium text-gray-800">Carte cadeaux</span>
+                                {apt.service && (
+                                  <span className="text-gray-600 text-sm ml-1">({apt.service})</span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="font-medium text-gray-800">{apt.service}</span>
+                            )}
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {apt.date ? formatDate(apt.date) : formatDate(apt.createdAt)}
+                              {apt.heure && ` à ${apt.heure}`}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {apt.carteCadeaux && (
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  apt.carteCadeauUtilisee
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : apt.carteCadeauEnvoyee
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}
+                              >
+                                {apt.carteCadeauUtilisee
+                                  ? "Carte utilisée"
+                                  : apt.carteCadeauEnvoyee
+                                  ? "Carte envoyée"
+                                  : "En attente"}
+                              </span>
+                            )}
+                            {apt.status && !apt.carteCadeaux && (
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  apt.status === "completed"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : apt.status === "cancelled"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-gray-200 text-gray-700"
+                                }`}
+                              >
+                                {apt.status === "completed"
+                                  ? "Effectué"
+                                  : apt.status === "cancelled"
+                                  ? "Annulé"
+                                  : apt.status === "confirmed"
+                                  ? "Confirmé"
+                                  : "En attente"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-gray-600 text-center py-8">Aucun rendez-vous pour le moment.</p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal d'édition */}
@@ -386,7 +504,8 @@ function Clients() {
                   {clientsByLetter[letter].map((client) => (
                     <div
                       key={client.email}
-                      className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300"
+                      onClick={() => setClientSoinsModal(client)}
+                      className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300 cursor-pointer"
                     >
                       <div className="flex flex-col lg:flex-row gap-4">
                         {/* Informations principales */}
@@ -427,7 +546,10 @@ function Clients() {
                               </div>
                             </div>
                             <button
-                              onClick={() => handleEditClick(client)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditClick(client);
+                              }}
                               className="flex items-center gap-1.5 px-3 py-1.5 bg-[#8b6f6f] text-white rounded-lg font-semibold hover:bg-[#7a5f5f] transition-colors text-xs flex-shrink-0"
                             >
                               <PencilIcon className="w-3.5 h-3.5" />

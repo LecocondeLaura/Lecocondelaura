@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import servicesData from "../../Data/Service.json";
 
-function ServicesPreview() {
+function ServicesPreview({ showDiscoverButton = true }) {
   const services = servicesData.map((service) => ({
     ...service,
     price: `${service.price.cabinet}€`,
@@ -16,13 +16,15 @@ function ServicesPreview() {
           <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-semibold text-[#8b6f6f]">
             Mes Services
           </h1>
-          <Link
-            to="/services"
-            className="bg-[#8b6f6f] text-white px-5 py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-[#5a524b] hover:shadow-xl hover:scale-105 active:scale-100 transition-all duration-300 flex items-center gap-2 group"
-          >
-            Découvrir tous mes services
-            <ArrowRightIcon className="w-3.5 h-3.5 md:w-4 md:h-4 group-hover:translate-x-1 transition-transform duration-300" />
-          </Link>
+          {showDiscoverButton && (
+            <Link
+              to="/services"
+              className="bg-[#8b6f6f] text-white px-5 py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-[#5a524b] hover:shadow-xl hover:scale-105 active:scale-100 transition-all duration-300 flex items-center gap-2 group"
+            >
+              Découvrir tous mes services
+              <ArrowRightIcon className="w-3.5 h-3.5 md:w-4 md:h-4 group-hover:translate-x-1 transition-transform duration-300" />
+            </Link>
+          )}
         </div>
         <div className="w-16 h-0.5 bg-[#8B827D]/40 mx-auto sm:mx-0 mb-6"></div>
         <p className="text-lg sm:text-xl text-[#8B827D] text-center md:text-left max-w-3xl leading-relaxed">
@@ -35,33 +37,34 @@ function ServicesPreview() {
         {services.map((service, index) => (
           <div
             key={service.id}
-            className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-[#f0cfcf]/50"
+            className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-[#f0cfcf]/50 h-full flex flex-col"
             style={{
               animationDelay: `${index * 200}ms`,
             }}
           >
-            <div className="relative p-8">
+            <div className="relative p-8 flex flex-col flex-1">
               <h3 className="text-xl text-center font-bold text-[#8b6f6f] mb-4 group-hover:text-[#f0cfcf] transition-colors">
                 Head Spa <br />
-                <span className="text-2xl text-[#8b6f6f]">{service.title}</span>
+                <span className="text-2xl text-[#8b6f6f]">{service.title}<br />
+                  <span className="text-sm text-[#8b6f6f] group-hover:text-[#f0cfcf] transition-colors">
+                    {service.age}
+                  </span>
+                </span>
               </h3>
-              <p className="text-gray-600 mb-6 leading-relaxed min-h-[60px]">
-                {service.description}
-              </p>
 
-              <ul className="space-y-2 mb-6">
+              <ul className="space-y-2 mb-6 my-10 flex-1">
                 {service.features.map((feature, idx) => (
                   <li
                     key={idx}
-                    className="flex items-center text-sm text-gray-600"
+                    className="flex items-center text-sm text-gray-600 "
                   >
-                    <span className="text-[#f0cfcf] mr-2">✓</span>
+                    <span className="text-[#f0cfcf] mr-2 my-1">✓</span>
                     {feature}
                   </li>
                 ))}
               </ul>
 
-              <div className="pt-6 border-t border-gray-100">
+              <div className="pt-6 border-t border-gray-100 mt-auto">
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center space-x-2">
                     <svg

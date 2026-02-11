@@ -55,15 +55,26 @@ export const getAvailableTimesForDate = async (date, allTimes) => {
     const data = await response.json();
 
     if (data.success) {
-      return data.data.availableTimes;
+      return {
+        availableTimes: data.data.availableTimes || [],
+        reservedAppointments: data.data.reservedAppointments || [],
+        isClosed: data.data.isClosed === true,
+      };
     }
 
     // En cas d'erreur API, retourner tous les horaires (fallback)
     console.warn("Erreur API, utilisation de tous les horaires par défaut");
-    return allTimes;
+    return {
+      availableTimes: allTimes,
+      reservedAppointments: [],
+      isClosed: false,
+    };
   } catch (error) {
     console.error("Erreur lors de la récupération:", error);
-    // En cas d'erreur réseau, retourner tous les horaires (mieux que rien)
-    return allTimes;
+    return {
+      availableTimes: allTimes,
+      reservedAppointments: [],
+      isClosed: false,
+    };
   }
 };

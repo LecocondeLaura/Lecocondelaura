@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import Appointment from "../models/Appointment.js";
 import { authenticateToken } from "../middleware/auth.js";
 import {
@@ -6,8 +7,16 @@ import {
   sendClientConfirmationEmail,
   sendGiftCardRequestEmail,
   sendGiftCardEmail,
+  sendCancellationEmail,
+  sendCancellationNotification,
+  sendGiftCardReminderEmail,
+  sendFollowUpEmail,
 } from "../services/emailService.js";
-import { generateGiftCardPDF } from "../services/giftCardService.js";
+import {
+  generateGiftCardPDF,
+  getCustomGiftCardImage,
+} from "../services/giftCardService.js";
+import { isDateClosed } from "./closures.js";
 
 const router = express.Router();
 
@@ -33,14 +42,26 @@ router.get("/available/:date", async (req, res) => {
     const { date } = req.params;
     const allTimes = [
       "09:00",
-      "10:00",
       "11:00",
       "14:00",
-      "15:00",
       "16:00",
-      "17:00",
       "18:00",
     ];
+
+    // Si le salon est fermé (congés/fermeture) ce jour-là : aucun créneau
+    const closed = await isDateClosed(date);
+    if (closed) {
+      return res.json({
+        success: true,
+        data: {
+          date,
+          availableTimes: [],
+          reservedTimes: [],
+          reservedAppointments: [],
+          isClosed: true,
+        },
+      });
+    }
 
     // Récupérer les rendez-vous pour cette date
     const dateObj = new Date(date);
@@ -52,8 +73,8 @@ router.get("/available/:date", async (req, res) => {
         $gte: startOfDay,
         $lte: endOfDay,
       },
-      status: { $in: ["pending", "confirmed"] },
-    }).select("heure");
+      status: { $in: ["pending", "confirmed", "completed"] },
+    }).select("heure service");
 
     const reservedTimes = reservedAppointments.map((apt) => apt.heure);
     const availableTimes = allTimes.filter(
@@ -66,6 +87,8 @@ router.get("/available/:date", async (req, res) => {
         date: date,
         availableTimes: availableTimes,
         reservedTimes: reservedTimes,
+        reservedAppointments: reservedAppointments,
+        isClosed: false,
       },
     });
   } catch (error) {
@@ -121,8 +144,18 @@ router.post("/", async (req, res) => {
         });
       }
 
+      // Vérifier si le salon est fermé (congés / fermeture) ce jour-là
+      const closed = await isDateClosed(date);
+      if (closed) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Le salon est fermé à cette date. Veuillez choisir un autre jour.",
+        });
+      }
+
       // Vérifier si le créneau est disponible
-      const isAvailable = await Appointment.isTimeSlotAvailable(date, heure);
+      const isAvailable = await Appointment.isTimeSlotAvailable(date, heure, service);
       if (!isAvailable) {
         return res.status(409).json({
           success: false,
@@ -236,7 +269,7 @@ router.get("/:id", async (req, res) => {
 router.patch("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
-    if (!["pending", "confirmed", "cancelled"].includes(status)) {
+    if (!["pending", "confirmed", "cancelled", "completed"].includes(status)) {
       return res.status(400).json({
         success: false,
         message: "Statut invalide",
@@ -270,10 +303,48 @@ router.patch("/:id/status", async (req, res) => {
   }
 });
 
-// PATCH - Marquer le paiement comme effectué pour une carte cadeau (protégé)
+// PATCH - Mettre à jour le paiement : moyen (espèces/chèque) et/ou paiement effectué (protégé)
 router.patch("/:id/paiement", authenticateToken, async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id);
+    const { paiementEffectue, moyenPaiement } = req.body;
+    const update = {};
+
+    if (moyenPaiement !== undefined) {
+      if (moyenPaiement === null || moyenPaiement === "") {
+        update.moyenPaiement = null;
+        update.paiementEffectue = false;
+      } else if (["especes", "cheque"].includes(moyenPaiement)) {
+        update.moyenPaiement = moyenPaiement;
+        update.paiementEffectue = true;
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "moyenPaiement doit être 'especes', 'cheque' ou vide",
+        });
+      }
+    }
+
+    if (paiementEffectue !== undefined) {
+      let paiementEffectueBool = paiementEffectue;
+      if (typeof paiementEffectue === "string") {
+        paiementEffectueBool = paiementEffectue === "true";
+      } else if (typeof paiementEffectue === "number") {
+        paiementEffectueBool = paiementEffectue === 1;
+      } else if (typeof paiementEffectue !== "boolean") {
+        return res.status(400).json({
+          success: false,
+          message: "Le champ paiementEffectue doit être un booléen",
+        });
+      }
+      update.paiementEffectue = paiementEffectueBool;
+      if (!paiementEffectueBool) update.moyenPaiement = null;
+    }
+
+    const appointment = await Appointment.findByIdAndUpdate(
+      req.params.id,
+      update,
+      { new: true, runValidators: true }
+    ).select("-__v");
 
     if (!appointment) {
       return res.status(404).json({
@@ -282,20 +353,10 @@ router.patch("/:id/paiement", authenticateToken, async (req, res) => {
       });
     }
 
-    if (!appointment.carteCadeaux) {
-      return res.status(400).json({
-        success: false,
-        message: "Ce rendez-vous n'est pas une carte cadeau",
-      });
-    }
-
-    appointment.paiementEffectue = true;
-    const updatedAppointment = await appointment.save();
-
     res.json({
       success: true,
-      message: "Paiement marqué comme effectué",
-      data: updatedAppointment,
+      message: "Paiement mis à jour",
+      data: appointment,
     });
   } catch (error) {
     res.status(500).json({
@@ -353,19 +414,34 @@ router.post(
         appointment.codeCarteCadeau = cardCode;
       }
 
-      // Générer le PDF de la carte cadeau
-      const { buffer: pdfBuffer, code: generatedCode } =
-        await generateGiftCardPDF(appointment);
+      // Pièce jointe : image personnalisée (Backend/assets/carte-cadeau.png) ou PDF généré
+      const customImage = getCustomGiftCardImage();
+      let attachment;
+      if (customImage) {
+        attachment = {
+          buffer: customImage.buffer,
+          filename: `Carte_Cadeau_${cardCode}${path.extname(customImage.filename)}`,
+          contentType: customImage.contentType,
+        };
+      } else {
+        const { buffer: pdfBuffer, code: generatedCode } =
+          await generateGiftCardPDF(appointment);
+        const finalCode = generatedCode || cardCode;
+        appointment.codeCarteCadeau = finalCode;
+        attachment = {
+          buffer: pdfBuffer,
+          filename: `Carte_Cadeau_${finalCode}.pdf`,
+          contentType: "application/pdf",
+        };
+      }
+      const finalCode = appointment.codeCarteCadeau;
 
-      // Utiliser le code généré ou celui existant
-      const finalCode = generatedCode || cardCode;
-      appointment.codeCarteCadeau = finalCode;
-
-      // Envoyer l'email avec la carte cadeau
-      await sendGiftCardEmail(appointment, pdfBuffer, finalCode);
+      // Envoyer l'email avec la carte cadeau (image ou PDF)
+      await sendGiftCardEmail(appointment, attachment, finalCode);
 
       // Marquer la carte cadeau comme envoyée
       appointment.carteCadeauEnvoyee = true;
+      appointment.dateEnvoiCarte = new Date();
       const updatedAppointment = await appointment.save();
 
       res.json({
@@ -383,5 +459,325 @@ router.post(
     }
   }
 );
+
+// PATCH - Marquer une carte cadeau comme utilisée (protégé)
+router.patch("/:id/carte-utilisee", authenticateToken, async (req, res) => {
+  try {
+    const appointment = await Appointment.findByIdAndUpdate(
+      req.params.id,
+      { carteCadeauUtilisee: true },
+      { new: true, runValidators: true }
+    ).select("-__v");
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Rendez-vous non trouvé",
+      });
+    }
+
+    if (!appointment.carteCadeaux) {
+      return res.status(400).json({
+        success: false,
+        message: "Ce rendez-vous n'est pas une carte cadeau",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Carte cadeau marquée comme utilisée",
+      data: appointment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la mise à jour",
+      error: error.message,
+    });
+  }
+});
+
+// DELETE - Supprimer un rendez-vous (protégé)
+router.delete("/:id", authenticateToken, async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Rendez-vous non trouvé",
+      });
+    }
+
+    // Ne pas supprimer les cartes cadeaux, seulement les rendez-vous
+    if (appointment.carteCadeaux) {
+      return res.status(400).json({
+        success: false,
+        message: "Les cartes cadeaux ne peuvent pas être supprimées",
+      });
+    }
+
+    // Envoyer l'email d'annulation au client
+    sendCancellationEmail(appointment).catch((error) => {
+      console.error(
+        "Erreur lors de l'envoi de l'email d'annulation (non bloquant):",
+        error
+      );
+    });
+
+    // Envoyer une notification d'annulation au propriétaire du salon
+    sendCancellationNotification(appointment).catch((error) => {
+      console.error(
+        "Erreur lors de l'envoi de la notification d'annulation (non bloquant):",
+        error
+      );
+    });
+
+    // Supprimer le rendez-vous
+    await Appointment.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: "Rendez-vous supprimé avec succès",
+    });
+  } catch (error) {
+    console.error("Erreur lors de la suppression du rendez-vous:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la suppression du rendez-vous",
+      error: error.message,
+    });
+  }
+});
+
+// GET - Récupérer les cartes cadeaux expirant bientôt (protégé)
+router.get("/gift-cards/expiring-soon", authenticateToken, async (req, res) => {
+  try {
+    const now = new Date();
+    const threeMonthsFromNow = new Date();
+    threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+    const sixMonthsFromNow = new Date();
+    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+
+    // Récupérer les cartes cadeaux envoyées qui approchent de l'expiration
+    // (entre 3 et 6 mois après l'envoi)
+    const giftCards = await Appointment.find({
+      carteCadeaux: true,
+      carteCadeauEnvoyee: true,
+    }).sort({ updatedAt: 1 });
+
+    // Filtrer celles qui sont entre 3 et 6 mois après l'envoi
+    const expiringSoon = giftCards.filter((card) => {
+      const cardSentDate =
+        card.dateEnvoiCarte ||
+        (card.carteCadeauEnvoyee ? card.updatedAt : null) ||
+        card.createdAt;
+      const expirationDate = new Date(cardSentDate);
+      expirationDate.setMonth(expirationDate.getMonth() + 6);
+
+      // Vérifier si on est entre 3 et 6 mois après l'envoi
+      const threeMonthsAfterSent = new Date(cardSentDate);
+      threeMonthsAfterSent.setMonth(threeMonthsAfterSent.getMonth() + 3);
+
+      return now >= threeMonthsAfterSent && now <= expirationDate;
+    });
+
+    // Ajouter les informations calculées
+    const cardsWithExpiration = expiringSoon.map((card) => {
+      const cardSentDate =
+        card.dateEnvoiCarte ||
+        (card.carteCadeauEnvoyee ? card.updatedAt : null) ||
+        card.createdAt;
+      const expirationDate = new Date(cardSentDate);
+      expirationDate.setMonth(expirationDate.getMonth() + 6);
+
+      const daysUntilExpiration = Math.ceil(
+        (expirationDate - now) / (1000 * 60 * 60 * 24)
+      );
+
+      return {
+        ...card.toObject(),
+        expirationDate,
+        daysUntilExpiration,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: cardsWithExpiration,
+    });
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération des cartes expirant bientôt:",
+      error
+    );
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la récupération",
+      error: error.message,
+    });
+  }
+});
+
+// POST - Envoyer une relance pour une carte cadeau (protégé)
+router.post("/:id/send-reminder", authenticateToken, async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Carte cadeau non trouvée",
+      });
+    }
+
+    if (!appointment.carteCadeaux || !appointment.carteCadeauEnvoyee) {
+      return res.status(400).json({
+        success: false,
+        message: "Ce n'est pas une carte cadeau envoyée",
+      });
+    }
+
+    // Envoyer l'email de relance
+    await sendGiftCardReminderEmail(appointment);
+
+    // Marquer la relance comme envoyée
+    appointment.relanceEnvoyee = true;
+    appointment.dateRelance = new Date();
+    await appointment.save();
+
+    res.json({
+      success: true,
+      message: "Email de relance envoyé avec succès",
+      data: appointment,
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de la relance:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de l'envoi de la relance",
+      error: error.message,
+    });
+  }
+});
+
+// POST - Envoyer un email de relance de test (protégé)
+router.post(
+  "/gift-cards/test-reminder",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      // Créer un objet de test avec des données fictives
+      const testAppointment = {
+        prenom: "Test",
+        nom: "Client",
+        email: process.env.RECIPIENT_EMAIL || process.env.EMAIL_USER,
+        service: "Head Spa Premium",
+        codeCarteCadeau: "CC-TEST-1234",
+        carteCadeauEnvoyee: true,
+        dateEnvoiCarte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // Il y a 3 mois
+        updatedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+      };
+
+      // Envoyer l'email de relance de test
+      await sendGiftCardReminderEmail(testAppointment);
+
+      res.json({
+        success: true,
+        message: "Email de relance de test envoyé avec succès",
+        testEmail: testAppointment.email,
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'envoi de l'email de test:", error);
+      res.status(500).json({
+        success: false,
+        message: "Erreur lors de l'envoi de l'email de test",
+        error: error.message,
+      });
+    }
+  }
+);
+
+// POST - Envoyer un email de suivi pour un rendez-vous (protégé)
+router.post("/:id/send-followup", authenticateToken, async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Rendez-vous non trouvé",
+      });
+    }
+
+    if (appointment.carteCadeaux) {
+      return res.status(400).json({
+        success: false,
+        message: "Ce n'est pas un rendez-vous",
+      });
+    }
+
+    if (!appointment.date) {
+      return res.status(400).json({
+        success: false,
+        message: "Ce rendez-vous n'a pas de date",
+      });
+    }
+
+    // Envoyer l'email de suivi
+    await sendFollowUpEmail(appointment);
+
+    // Marquer l'email de suivi comme envoyé
+    appointment.suiviEmailEnvoye = true;
+    appointment.dateSuiviEmail = new Date();
+    await appointment.save();
+
+    res.json({
+      success: true,
+      message: "Email de suivi envoyé avec succès",
+      data: appointment,
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de suivi:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de l'envoi de l'email de suivi",
+      error: error.message,
+    });
+  }
+});
+
+// POST - Envoyer un email de suivi de test (protégé)
+router.post("/test-followup", authenticateToken, async (req, res) => {
+  try {
+    // Créer un objet de test avec des données fictives
+    const testAppointment = {
+      prenom: "Test",
+      nom: "Client",
+      email: process.env.RECIPIENT_EMAIL || process.env.EMAIL_USER,
+      service: "Head Spa Premium",
+      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // Il y a 2 jours
+      heure: "14:00",
+      carteCadeaux: false,
+    };
+
+    // Envoyer l'email de suivi de test
+    await sendFollowUpEmail(testAppointment);
+
+    res.json({
+      success: true,
+      message: "Email de suivi de test envoyé avec succès",
+      testEmail: testAppointment.email,
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de test:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de l'envoi de l'email de test",
+      error: error.message,
+    });
+  }
+});
 
 export default router;

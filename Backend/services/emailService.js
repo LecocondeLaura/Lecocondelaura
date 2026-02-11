@@ -138,11 +138,22 @@ export const sendAppointmentNotification = async (appointment) => {
                 padding: 20px;
               }
               .header {
-                background: linear-gradient(135deg, #f0cfcf 0%, #e0bfbf 100%);
+                background: #f0cfcf;
                 padding: 30px;
                 text-align: center;
                 border-radius: 10px 10px 0 0;
                 color: white;
+              }
+              .header h1 {
+                color: white !important;
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+              }
+              .header p {
+                color: white !important;
+                margin: 10px 0 0 0;
+                opacity: 0.95;
               }
               .content {
                 background: #f9f9f9;
@@ -193,10 +204,14 @@ export const sendAppointmentNotification = async (appointment) => {
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1>${headerTitle}</h1>
-              <p>Le Cocon de Laura</p>
-            </div>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f0cfcf" style="background-color: #f0cfcf !important; border-radius: 10px 10px 0 0; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+              <tr>
+                <td bgcolor="#f0cfcf" style="padding: 30px; text-align: center; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+                  <h1 bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 0; font-size: 24px; font-weight: bold; background-color: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">${headerTitle}</h1>
+                  <p bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 10px 0 0 0; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">Le Cocon de Laura</p>
+                </td>
+              </tr>
+            </table>
             <div class="content">
               <div class="info-box">
                 <p><span class="label">👤 Client :</span> ${
@@ -211,7 +226,7 @@ export const sendAppointmentNotification = async (appointment) => {
               </div>
               
               <div class="info-box">
-                <p><span class="label">🌸 Service :</span> ${
+                <p><span class="label">🌸 Soin :</span> ${
                   appointment.service
                 }</p>
                 ${serviceInfoHtml}
@@ -221,7 +236,7 @@ export const sendAppointmentNotification = async (appointment) => {
 
               <p style="margin-top: 30px; text-align: center; color: #666;">
                 <small>Rendez-vous créé le ${new Date().toLocaleString(
-                  "fr-FR"
+                  "fr-FR",
                 )}</small>
               </p>
             </div>
@@ -259,11 +274,11 @@ ${appointment.message ? `Message: ${appointment.message}` : ""}
     if (error.code === "EAUTH") {
       console.error("\n💡 AIDE : Erreur d'authentification Gmail");
       console.error(
-        "   → Vous devez utiliser un App Password (pas votre mot de passe Gmail)"
+        "   → Vous devez utiliser un App Password (pas votre mot de passe Gmail)",
       );
       console.error("   → Voir le guide : Backend/GMAIL_APP_PASSWORD.md");
       console.error(
-        "   → Lien direct : https://myaccount.google.com/apppasswords"
+        "   → Lien direct : https://myaccount.google.com/apppasswords",
       );
     }
 
@@ -284,14 +299,14 @@ export const sendClientConfirmationEmail = async (appointment) => {
         year: "numeric",
         month: "long",
         day: "numeric",
-      }
+      },
     );
 
     // Contenu de l'email
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: appointment.email,
-      subject: `✅ Confirmation de votre réservation - Le Cocon de Laura`,
+      subject: `Confirmation de votre réservation - Le Cocon de Laura`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -307,11 +322,50 @@ export const sendClientConfirmationEmail = async (appointment) => {
                 padding: 20px;
               }
               .header {
-                background: linear-gradient(135deg, #f0cfcf 0%, #e0bfbf 100%);
+                background: #f0cfcf !important;
                 padding: 30px;
                 text-align: center;
                 border-radius: 10px 10px 0 0;
-                color: white;
+                color: white !important;
+              }
+              .header h1 {
+                color: #ffffff !important;
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .header p {
+                color: #ffffff !important;
+                margin: 10px 0 0 0;
+                opacity: 1 !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              @media only screen and (max-width: 600px) {
+                .header {
+                  background-color: #f0cfcf !important;
+                  background: #f0cfcf !important;
+                }
+                .header h1 {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+                .header p {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+              }
+              [data-ogsc] .header {
+                background-color: #f0cfcf !important;
+                background: #f0cfcf !important;
+              }
+              [data-ogsc] .header h1 {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              [data-ogsc] .header p {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
               }
               .content {
                 background: #f9f9f9;
@@ -342,33 +396,40 @@ export const sendClientConfirmationEmail = async (appointment) => {
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1>✅ Réservation confirmée</h1>
-              <p>Le Cocon de Laura</p>
-            </div>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f0cfcf" style="background-color: #f0cfcf !important; border-radius: 10px 10px 0 0; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+              <tr>
+                <td bgcolor="#f0cfcf" style="padding: 30px; text-align: center; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+                  <h1 bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 0; font-size: 24px; font-weight: bold; background-color: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">✅ Réservation confirmée</h1>
+                  <p bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 10px 0 0 0; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">Le Cocon de Laura</p>
+                </td>
+              </tr>
+            </table>
             <div class="content">
               <p>Bonjour ${appointment.prenom},</p>
               
               <p>Nous avons le plaisir de confirmer votre réservation :</p>
               
               <div class="info-box">
-                <p><span class="label">🌸 Service :</span> ${appointment.service}</p>
+                <p><span class="label">🌸 Soin :</span> ${appointment.service}</p>
                 <p><span class="label">📅 Date :</span> ${dateFormatted}</p>
                 <p><span class="label">🕐 Heure :</span> ${appointment.heure}</p>
               </div>
 
               <p>Nous avons hâte de vous accueillir au salon !</p>
               
+              <p><strong>💳 Paiement :</strong> Le règlement s'effectue au salon lors de votre venue, en espèces ou par chèque.</p>
+              
               <p>Si vous avez des questions ou souhaitez modifier votre rendez-vous, n'hésitez pas à nous contacter :</p>
               
               <div class="info-box">
+                <p><span class="label">🌐 Site :</span> https://www.lecocondelaura.fr</p>
                 <p><span class="label">📞 Téléphone :</span> 07 87 98 43 41</p>
                 <p><span class="label">📧 Email :</span> lecocondelaura17@gmail.com</p>
                 <p><span class="label">📍 Adresse :</span> 70 rue Sadi Carnot, 17500 Jonzac</p>
               </div>
 
               <p>À très bientôt !</p>
-              <p><strong>Laura</strong><br>Le Cocon de Laura</p>
+              <p>Le Cocon de Laura</p>
             </div>
             <div class="footer">
               <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
@@ -383,31 +444,34 @@ Bonjour ${appointment.prenom},
 
 Nous avons le plaisir de confirmer votre réservation :
 
-Service : ${appointment.service}
+Soin : ${appointment.service}
 Date : ${dateFormatted}
 Heure : ${appointment.heure}
 
 Nous avons hâte de vous accueillir au salon !
 
+Paiement : Le règlement s'effectue au salon lors de votre venue, en espèces ou par chèque.
+
 Contact :
+Site : https://www.lecocondelaura.fr
 Téléphone : 07 87 98 43 41
 Email : lecocondelaura17@gmail.com
 Adresse : 70 rue Sadi Carnot, 17500 Jonzac
 
 À très bientôt !
-Laura - Le Cocon de Laura
+Le Cocon de Laura
       `,
     };
 
     await transporter.sendMail(mailOptions);
     console.log(
-      `✅ Email de confirmation envoyé au client ${appointment.email}`
+      `✅ Email de confirmation envoyé au client ${appointment.email}`,
     );
     return true;
   } catch (error) {
     console.error(
       "❌ Erreur lors de l'envoi de l'email de confirmation:",
-      error.message
+      error.message,
     );
     return false;
   }
@@ -433,12 +497,14 @@ export const sendGiftCardRequestEmail = async (appointment) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: appointment.email,
-      subject: `🎁 Demande de carte cadeau - Le Cocon de Laura`,
+      subject: `Demande de carte cadeau - Le Cocon de Laura`,
       html: `
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="utf-8">
+            <meta name="color-scheme" content="light">
+            <meta name="supported-color-schemes" content="light">
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -449,11 +515,50 @@ export const sendGiftCardRequestEmail = async (appointment) => {
                 padding: 20px;
               }
               .header {
-                background: linear-gradient(135deg, #f0cfcf 0%, #e0bfbf 100%);
+                background: #f0cfcf !important;
                 padding: 30px;
                 text-align: center;
                 border-radius: 10px 10px 0 0;
-                color: white;
+                color: white !important;
+              }
+              .header h1 {
+                color: #ffffff !important;
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .header p {
+                color: #ffffff !important;
+                margin: 10px 0 0 0;
+                opacity: 1 !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              @media only screen and (max-width: 600px) {
+                .header {
+                  background-color: #f0cfcf !important;
+                  background: #f0cfcf !important;
+                }
+                .header h1 {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+                .header p {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+              }
+              [data-ogsc] .header {
+                background-color: #f0cfcf !important;
+                background: #f0cfcf !important;
+              }
+              [data-ogsc] .header h1 {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              [data-ogsc] .header p {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
               }
               .content {
                 background: #f9f9f9;
@@ -498,17 +603,21 @@ export const sendGiftCardRequestEmail = async (appointment) => {
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1>🎁 Demande de carte cadeau</h1>
-              <p>Le Cocon de Laura</p>
-            </div>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f0cfcf" style="background-color: #f0cfcf !important; border-radius: 10px 10px 0 0; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+              <tr>
+                <td bgcolor="#f0cfcf" style="padding: 30px; text-align: center; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+                  <h1 bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 0; font-size: 24px; font-weight: bold; background-color: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">🎁 Demande de carte cadeau</h1>
+                  <p bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 10px 0 0 0; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">Le Cocon de Laura</p>
+                </td>
+              </tr>
+            </table>
             <div class="content">
               <p style="margin: 0 0 15px 0;">Bonjour ${appointment.prenom},</p>
               
               <p style="margin: 0 0 20px 0;">Merci pour votre demande de carte cadeau !</p>
               
               <div class="info-box">
-                <p style="margin: 5px 0;"><span class="label">🌸 Service :</span> ${appointment.service}</p>
+                <p style="margin: 5px 0;"><span class="label">🌸 Soin :</span> ${appointment.service}</p>
                 <p style="margin: 5px 0;"><span class="label">👤 Pour :</span> ${appointment.prenom} ${appointment.nom}</p>
               </div>
 
@@ -521,16 +630,15 @@ export const sendGiftCardRequestEmail = async (appointment) => {
 
               <p style="margin: 20px 0 15px 0;"><strong>Une fois le virement effectué, votre carte cadeau vous sera envoyée par email avec un code unique.</strong></p>
               
-              <p style="margin: 20px 0 15px 0;">Pour réserver votre rendez-vous une fois la carte cadeau reçue, contactez-nous :</p>
-              
               <div class="info-box">
-                <p style="margin: 5px 0;"><span class="label">📞 Téléphone :</span> 07 87 98 43 41</p>
-                <p style="margin: 5px 0;"><span class="label">📧 Email :</span> lecocondelaura17@gmail.com</p>
-                <p style="margin: 5px 0;"><span class="label">📍 Adresse :</span> 70 rue Sadi Carnot, 17500 Jonzac</p>
+              <p style="margin: 5px 0;"><span class="label">🌐 Site :</span> https://www.lecocondelaura.fr</p>
+              <p style="margin: 5px 0;"><span class="label">📞 Téléphone :</span> 07 87 98 43 41</p>
+              <p style="margin: 5px 0;"><span class="label">📧 Email :</span> lecocondelaura17@gmail.com</p>
+              <p style="margin: 5px 0;"><span class="label">📍 Adresse :</span> 70 rue Sadi Carnot, 17500 Jonzac</p>
               </div>
 
               <p style="margin: 20px 0 10px 0;">Nous avons hâte de vous accueillir !</p>
-              <p style="margin: 10px 0 0 0;"><strong>Laura</strong><br>Le Cocon de Laura</p>
+              <p style="margin: 10px 0 0 0;">Le Cocon de Laura</p>
             </div>
             <div class="footer">
               <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
@@ -545,7 +653,7 @@ Bonjour ${appointment.prenom},
 
 Merci pour votre demande de carte cadeau !
 
-Service : ${appointment.service}
+Soin : ${appointment.service}
 Pour : ${appointment.prenom} ${appointment.nom}
 
 Pour finaliser votre commande, veuillez effectuer le virement bancaire aux coordonnées suivantes :
@@ -555,18 +663,19 @@ ${ribText}
 Une fois le virement effectué, votre carte cadeau vous sera envoyée par email avec un code unique.
 
 Pour réserver votre rendez-vous une fois la carte cadeau reçue :
+Site : https://www.lecocondelaura.fr
 Téléphone : 07 87 98 43 41
 Email : lecocondelaura17@gmail.com
 Adresse : 70 rue Sadi Carnot, 17500 Jonzac
 
 Nous avons hâte de vous accueillir !
-Laura - Le Cocon de Laura
+Le Cocon de Laura
       `,
     };
 
     const info = await transporter.sendMail(mailOptions);
     console.log(
-      `✅ Email de demande de carte cadeau envoyé au client ${appointment.email}`
+      `✅ Email de demande de carte cadeau envoyé au client ${appointment.email}`,
     );
     console.log("📧 Détails de l'email:", {
       to: appointment.email,
@@ -577,14 +686,14 @@ Laura - Le Cocon de Laura
   } catch (error) {
     console.error(
       "❌ Erreur lors de l'envoi de l'email de demande de carte cadeau:",
-      error.message
+      error.message,
     );
     return false;
   }
 };
 
-// Envoyer un email avec la carte cadeaux en PDF (après paiement)
-export const sendGiftCardEmail = async (appointment, pdfBuffer, cardCode) => {
+// Envoyer un email avec la carte cadeau en pièce jointe (PDF ou image personnalisée)
+export const sendGiftCardEmail = async (appointment, attachment, cardCode) => {
   try {
     const transporter = createTransporter();
 
@@ -592,12 +701,14 @@ export const sendGiftCardEmail = async (appointment, pdfBuffer, cardCode) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: appointment.email,
-      subject: `🎁 Votre carte cadeau - Le Cocon de Laura`,
+      subject: `Votre carte cadeau - Le Cocon de Laura`,
       html: `
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="utf-8">
+            <meta name="color-scheme" content="light">
+            <meta name="supported-color-schemes" content="light">
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -608,11 +719,50 @@ export const sendGiftCardEmail = async (appointment, pdfBuffer, cardCode) => {
                 padding: 20px;
               }
               .header {
-                background: linear-gradient(135deg, #f0cfcf 0%, #e0bfbf 100%);
+                background: #f0cfcf !important;
                 padding: 30px;
                 text-align: center;
                 border-radius: 10px 10px 0 0;
-                color: white;
+                color: white !important;
+              }
+              .header h1 {
+                color: #ffffff !important;
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .header p {
+                color: #ffffff !important;
+                margin: 10px 0 0 0;
+                opacity: 1 !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              @media only screen and (max-width: 600px) {
+                .header {
+                  background-color: #f0cfcf !important;
+                  background: #f0cfcf !important;
+                }
+                .header h1 {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+                .header p {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+              }
+              [data-ogsc] .header {
+                background-color: #f0cfcf !important;
+                background: #f0cfcf !important;
+              }
+              [data-ogsc] .header h1 {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              [data-ogsc] .header p {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
               }
               .content {
                 background: #f9f9f9;
@@ -656,44 +806,48 @@ export const sendGiftCardEmail = async (appointment, pdfBuffer, cardCode) => {
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1>🎁 Votre carte cadeau</h1>
-              <p>Le Cocon de Laura</p>
-            </div>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f0cfcf" style="background-color: #f0cfcf !important; border-radius: 10px 10px 0 0; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+              <tr>
+                <td bgcolor="#f0cfcf" style="padding: 30px; text-align: center; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+                  <h1 bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 0; font-size: 24px; font-weight: bold; background-color: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">🎁 Votre carte cadeau</h1>
+                  <p bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 10px 0 0 0; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">Le Cocon de Laura</p>
+                </td>
+              </tr>
+            </table>
             <div class="content">
               <p>Bonjour ${appointment.prenom},</p>
               
               <p>Merci pour votre commande ! Votre carte cadeau est prête.</p>
               
               <div class="info-box">
-                <p><span class="label">🌸 Service :</span> ${appointment.service}</p>
+                <p><span class="label">🌸 Soin :</span> ${appointment.service}</p>
                 <p><span class="label">👤 Pour :</span> ${appointment.prenom} ${appointment.nom}</p>
               </div>
 
               <div class="code-box">
-                <p style="margin: 0; color: #666; font-size: 14px;">Code de la carte</p>
+                <p style="margin: 0; color: #666; font-size: 14px;">Numéro de la carte</p>
                 <p class="code">${cardCode}</p>
               </div>
 
               <p><strong>Votre carte cadeau est en pièce jointe de cet email.</strong></p>
               
-              <p>Pour utiliser votre carte cadeaux :</p>
+              <p>Pour utiliser votre carte cadeau :</p>
               <ul>
-                <li>Présentez-la lors de votre réservation</li>
-                <li>Elle est valable 12 mois à compter de ce jour</li>
-                <li>Un seul service par carte cadeaux</li>
+                <li>Prenez rendez-vous sur le site pour effectuer votre soin</li>
+                <li>Venez avec votre carte et communiquez le numéro de la carte pour validation</li>
+                <li>Elle est valable 6 mois à compter de ce jour</li>
+                <li>Un seul soin par carte cadeau</li>
               </ul>
-
-              <p>Pour réserver votre rendez-vous, contactez-nous :</p>
               
               <div class="info-box">
+                <p><span class="label">🌐 Site :</span> https://www.lecocondelaura.fr</p>
                 <p><span class="label">📞 Téléphone :</span> 07 87 98 43 41</p>
                 <p><span class="label">📧 Email :</span> lecocondelaura17@gmail.com</p>
                 <p><span class="label">📍 Adresse :</span> 70 rue Sadi Carnot, 17500 Jonzac</p>
               </div>
 
               <p>Nous avons hâte de vous accueillir !</p>
-              <p><strong>Laura</strong><br>Le Cocon de Laura</p>
+              <p>Le Cocon de Laura</p>
             </div>
             <div class="footer">
               <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
@@ -708,16 +862,650 @@ Bonjour ${appointment.prenom},
 
 Merci pour votre commande ! Votre carte cadeau est prête.
 
-Service : ${appointment.service}
+Soin : ${appointment.service}
 Pour : ${appointment.prenom} ${appointment.nom}
-Code : ${cardCode}
+
+Numéro de la carte : ${cardCode}
 
 Votre carte cadeau est en pièce jointe de cet email.
 
-Pour utiliser votre carte cadeaux :
-- Présentez-la lors de votre réservation
+Lors de votre venue : venez avec votre carte et indiquez le numéro de la carte pour valider votre soin.
+
+Ce soin est offert par une carte cadeau.
+
+Pour utiliser votre carte cadeau :
+- Prenez rendez-vous sur le site pour effectuer votre soin
+- Venez avec votre carte et communiquez le numéro de la carte pour validation
 - Elle est valable 6 mois à compter de ce jour
-- Un seul service par carte cadeau
+- Un seul soin par carte cadeau
+
+Site : https://www.lecocondelaura.fr
+Téléphone : 07 87 98 43 41
+Email : lecocondelaura17@gmail.com
+Adresse : 70 rue Sadi Carnot, 17500 Jonzac
+
+Nous avons hâte de vous accueillir !
+Le Cocon de Laura
+      `,
+      attachments: [
+        {
+          filename: attachment.filename,
+          content: attachment.buffer,
+          contentType: attachment.contentType,
+        },
+      ],
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(
+      `✅ Email avec carte cadeau envoyé au client ${appointment.email}`,
+    );
+    return true;
+  } catch (error) {
+    console.error(
+      "❌ Erreur lors de l'envoi de l'email avec carte cadeau:",
+      error.message,
+    );
+    return false;
+  }
+};
+
+// Envoyer un email d'annulation au client
+export const sendCancellationEmail = async (appointment) => {
+  try {
+    const transporter = createTransporter();
+
+    // Formater la date
+    const dateFormatted = new Date(appointment.date).toLocaleDateString(
+      "fr-FR",
+      {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      },
+    );
+
+    // Contenu de l'email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: appointment.email,
+      subject: `Annulation de votre rendez-vous - Le Cocon de Laura`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="color-scheme" content="light">
+            <meta name="supported-color-schemes" content="light">
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                -webkit-text-size-adjust: 100%;
+                -ms-text-size-adjust: 100%;
+              }
+              .header {
+                background: #f0cfcf !important;
+                padding: 30px;
+                text-align: center;
+                border-radius: 10px 10px 0 0;
+                color: white !important;
+              }
+              .header h1 {
+                color: #ffffff !important;
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .header p {
+                color: #ffffff !important;
+                margin: 10px 0 0 0;
+                opacity: 1 !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              @media only screen and (max-width: 600px) {
+                .header {
+                  background-color: #f0cfcf !important;
+                  background: #f0cfcf !important;
+                }
+                .header h1 {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+                .header p {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+              }
+              [data-ogsc] .header {
+                background-color: #f0cfcf !important;
+                background: #f0cfcf !important;
+              }
+              [data-ogsc] .header h1 {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              [data-ogsc] .header p {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .content {
+                background: #f9f9f9;
+                padding: 30px;
+                border-radius: 0 0 10px 10px;
+              }
+              .info-box {
+                background: white;
+                padding: 20px;
+                margin: 15px 0;
+                border-radius: 8px;
+                border-left: 4px solid #f0cfcf;
+              }
+              .cancelled-box {
+                background: #ffe6e6;
+                padding: 20px;
+                margin: 15px 0;
+                border-radius: 8px;
+                border-left: 4px solid #dc3545;
+              }
+              .label {
+                font-weight: bold;
+                color: #8b6f6f;
+                display: inline-block;
+                min-width: 120px;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #ddd;
+                color: #666;
+                font-size: 12px;
+              }
+            </style>
+          </head>
+          <body>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f0cfcf" style="background-color: #f0cfcf !important; border-radius: 10px 10px 0 0; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+              <tr>
+                <td bgcolor="#f0cfcf" style="padding: 30px; text-align: center; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+                  <h1 bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 0; font-size: 24px; font-weight: bold; background-color: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">❌ Rendez-vous annulé</h1>
+                  <p bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 10px 0 0 0; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">Le Cocon de Laura</p>
+                </td>
+              </tr>
+            </table>
+            <div class="content">
+              <p>Bonjour ${appointment.prenom},</p>
+              
+              <p>Nous vous informons que votre rendez-vous a été annulé :</p>
+              
+              <div class="cancelled-box">
+                <p><span class="label">🌸 Soin :</span> ${appointment.service}</p>
+                <p><span class="label">📅 Date :</span> ${dateFormatted}</p>
+                <p><span class="label">🕐 Heure :</span> ${appointment.heure}</p>
+              </div>
+
+              <p>Nous sommes désolés pour ce désagrément. Si vous souhaitez prendre un nouveau rendez-vous, n'hésitez pas à nous contacter :</p>
+              
+              <div class="info-box">
+                <p><span class="label">🌐 Site :</span> https://www.lecocondelaura.fr</p>
+                <p><span class="label">📞 Téléphone :</span> 07 87 98 43 41</p>
+                <p><span class="label">📧 Email :</span> lecocondelaura17@gmail.com</p>
+                <p><span class="label">📍 Adresse :</span> 70 rue Sadi Carnot, 17500 Jonzac</p>
+              </div>
+
+              <p>Nous espérons vous accueillir prochainement !</p>
+              <p>Le Cocon de Laura</p>
+            </div>
+            <div class="footer">
+              <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
+            </div>
+          </body>
+        </html>
+      `,
+      text: `
+Annulation de rendez-vous - Le Cocon de Laura
+
+Bonjour ${appointment.prenom},
+
+Nous vous informons que votre rendez-vous a été annulé :
+
+Soin : ${appointment.service}
+Date : ${dateFormatted}
+Heure : ${appointment.heure}
+
+Nous sommes désolés pour ce désagrément. Si vous souhaitez prendre un nouveau rendez-vous, n'hésitez pas à nous contacter :
+
+Site : https://www.lecocondelaura.fr
+Téléphone : 07 87 98 43 41
+Email : lecocondelaura17@gmail.com
+Adresse : 70 rue Sadi Carnot, 17500 Jonzac
+
+Nous espérons vous accueillir prochainement !
+Le Cocon de Laura
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Email d'annulation envoyé au client ${appointment.email}`);
+    return true;
+  } catch (error) {
+    console.error(
+      "❌ Erreur lors de l'envoi de l'email d'annulation:",
+      error.message,
+    );
+    return false;
+  }
+};
+
+// Envoyer une notification d'annulation au propriétaire du salon
+export const sendCancellationNotification = async (appointment) => {
+  try {
+    const transporter = createTransporter();
+    const recipientEmail = process.env.RECIPIENT_EMAIL;
+
+    if (!recipientEmail) {
+      console.warn("⚠️ RECIPIENT_EMAIL non configuré, email non envoyé");
+      return false;
+    }
+
+    // Formater la date
+    const dateFormatted = new Date(appointment.date).toLocaleDateString(
+      "fr-FR",
+      {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      },
+    );
+
+    // Contenu de l'email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: recipientEmail,
+      subject: `Rendez-vous annulé - ${appointment.prenom} ${appointment.nom}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="color-scheme" content="light">
+            <meta name="supported-color-schemes" content="light">
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                -webkit-text-size-adjust: 100%;
+                -ms-text-size-adjust: 100%;
+              }
+              .header {
+                background: #f0cfcf !important;
+                padding: 30px;
+                text-align: center;
+                border-radius: 10px 10px 0 0;
+                color: white !important;
+              }
+              .header h1 {
+                color: #ffffff !important;
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .header p {
+                color: #ffffff !important;
+                margin: 10px 0 0 0;
+                opacity: 1 !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              @media only screen and (max-width: 600px) {
+                .header {
+                  background-color: #f0cfcf !important;
+                  background: #f0cfcf !important;
+                }
+                .header h1 {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+                .header p {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+              }
+              [data-ogsc] .header {
+                background-color: #f0cfcf !important;
+                background: #f0cfcf !important;
+              }
+              [data-ogsc] .header h1 {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              [data-ogsc] .header p {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .content {
+                background: #f9f9f9;
+                padding: 30px;
+                border-radius: 0 0 10px 10px;
+              }
+              .info-box {
+                background: white;
+                padding: 20px;
+                margin: 15px 0;
+                border-radius: 8px;
+                border-left: 4px solid #f0cfcf;
+              }
+              .cancelled-box {
+                background: #ffe6e6;
+                padding: 20px;
+                margin: 15px 0;
+                border-radius: 8px;
+                border-left: 4px solid #dc3545;
+              }
+              .label {
+                font-weight: bold;
+                color: #8b6f6f;
+                display: inline-block;
+                min-width: 120px;
+              }
+            </style>
+          </head>
+          <body>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f0cfcf" style="background-color: #f0cfcf !important; border-radius: 10px 10px 0 0; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+              <tr>
+                <td bgcolor="#f0cfcf" style="padding: 30px; text-align: center; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+                  <h1 bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 0; font-size: 24px; font-weight: bold; background-color: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">❌ Rendez-vous annulé</h1>
+                  <p bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 10px 0 0 0; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">Le Cocon de Laura</p>
+                </td>
+              </tr>
+            </table>
+            <div class="content">
+              <p>Un rendez-vous a été annulé :</p>
+              
+              <div class="info-box">
+                <p><span class="label">👤 Client :</span> ${
+                  appointment.prenom
+                } ${appointment.nom}</p>
+                <p><span class="label">📧 Email :</span> ${
+                  appointment.email
+                }</p>
+                <p><span class="label">📞 Téléphone :</span> ${
+                  appointment.telephone
+                }</p>
+              </div>
+              
+              <div class="cancelled-box">
+                <p><span class="label">🌸 Soin :</span> ${
+                  appointment.service
+                }</p>
+                <p><span class="label">📅 Date :</span> ${dateFormatted}</p>
+                <p><span class="label">🕐 Heure :</span> ${
+                  appointment.heure
+                }</p>
+              </div>
+
+              <p style="margin-top: 30px; text-align: center; color: #666;">
+                <small>Rendez-vous annulé le ${new Date().toLocaleString(
+                  "fr-FR",
+                )}</small>
+              </p>
+            </div>
+          </body>
+        </html>
+      `,
+      text: `
+Rendez-vous annulé - Le Cocon de Laura
+
+Un rendez-vous a été annulé :
+
+Client : ${appointment.prenom} ${appointment.nom}
+Email : ${appointment.email}
+Téléphone : ${appointment.telephone}
+
+Service : ${appointment.service}
+Date : ${dateFormatted}
+Heure : ${appointment.heure}
+
+Rendez-vous annulé le ${new Date().toLocaleString("fr-FR")}
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Notification d'annulation envoyée à ${recipientEmail}`);
+    return true;
+  } catch (error) {
+    console.error(
+      "❌ Erreur lors de l'envoi de la notification d'annulation:",
+      error.message,
+    );
+    return false;
+  }
+};
+
+// Envoyer un email de relance pour une carte cadeaux (3 mois avant expiration)
+export const sendGiftCardReminderEmail = async (appointment) => {
+  try {
+    const transporter = createTransporter();
+
+    // Calculer la date d'expiration (6 mois après l'envoi de la carte)
+    // Utiliser dateEnvoiCarte si disponible, sinon updatedAt si carteCadeauEnvoyee est true, sinon createdAt
+    const cardSentDate =
+      appointment.dateEnvoiCarte ||
+      (appointment.carteCadeauEnvoyee ? appointment.updatedAt : null) ||
+      appointment.createdAt;
+    const expirationDate = new Date(cardSentDate);
+    expirationDate.setMonth(expirationDate.getMonth() + 6);
+
+    // Formater les dates
+    const expirationDateFormatted = expirationDate.toLocaleDateString("fr-FR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Contenu de l'email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: appointment.email,
+      subject: `⏰ Rappel : Votre carte cadeau expire bientôt - Le Cocon de Laura`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="color-scheme" content="light">
+            <meta name="supported-color-schemes" content="light">
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                -webkit-text-size-adjust: 100%;
+                -ms-text-size-adjust: 100%;
+              }
+              .header {
+                background: #f0cfcf !important;
+                padding: 30px;
+                text-align: center;
+                border-radius: 10px 10px 0 0;
+                color: white !important;
+              }
+              .header h1 {
+                color: #ffffff !important;
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .header p {
+                color: #ffffff !important;
+                margin: 10px 0 0 0;
+                opacity: 1 !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              @media only screen and (max-width: 600px) {
+                .header {
+                  background-color: #f0cfcf !important;
+                  background: #f0cfcf !important;
+                }
+                .header h1 {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+                .header p {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+              }
+              [data-ogsc] .header {
+                background-color: #f0cfcf !important;
+                background: #f0cfcf !important;
+              }
+              [data-ogsc] .header h1 {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              [data-ogsc] .header p {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .content {
+                background: #f9f9f9;
+                padding: 30px;
+                border-radius: 0 0 10px 10px;
+              }
+              .info-box {
+                background: white;
+                padding: 20px;
+                margin: 15px 0;
+                border-radius: 8px;
+                border-left: 4px solid #f0cfcf;
+              }
+              .reminder-box {
+                background: #fff3cd;
+                padding: 20px;
+                margin: 15px 0;
+                border-radius: 8px;
+                border-left: 4px solid #ffc107;
+              }
+              .label {
+                font-weight: bold;
+                color: #8b6f6f;
+                display: inline-block;
+                min-width: 120px;
+              }
+              .code-box {
+                background: #f0cfcf;
+                padding: 15px;
+                border-radius: 8px;
+                text-align: center;
+                margin: 20px 0;
+              }
+              .code {
+                font-size: 24px;
+                font-weight: bold;
+                color: #8b6f6f;
+                letter-spacing: 2px;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #ddd;
+                color: #666;
+                font-size: 12px;
+              }
+            </style>
+          </head>
+          <body>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f0cfcf" style="background-color: #f0cfcf !important; border-radius: 10px 10px 0 0; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+              <tr>
+                <td bgcolor="#f0cfcf" style="padding: 30px; text-align: center; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+                  <h1 bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 0; font-size: 24px; font-weight: bold; background-color: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">⏰ Rappel carte cadeau</h1>
+                  <p bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 10px 0 0 0; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">Le Cocon de Laura</p>
+                </td>
+              </tr>
+            </table>
+            <div class="content">
+              <p>Bonjour ${appointment.prenom},</p>
+              
+              <p>Nous souhaitons vous rappeler que vous possédez une carte cadeau qui expire dans 3 mois.</p>
+              
+              <div class="reminder-box">
+                <p style="margin: 0; font-weight: bold; color: #856404;">⏰ Date d'expiration : ${expirationDateFormatted}</p>
+                <p style="margin: 5px 0 0 0; color: #856404;">Il vous reste 3 mois pour l'utiliser !</p>
+              </div>
+
+              <div class="info-box">
+                <p><span class="label">🌸 Soin :</span> ${
+                  appointment.service
+                }</p>
+                <p><span class="label">👤 Pour :</span> ${appointment.prenom} ${
+                  appointment.nom
+                }</p>
+              </div>
+
+              ${
+                appointment.codeCarteCadeau
+                  ? `
+              <div class="code-box">
+                <p style="margin: 0; color: #666; font-size: 14px;">Code de votre carte</p>
+                <p class="code">${appointment.codeCarteCadeau}</p>
+              </div>
+              `
+                  : ""
+              }
+
+              <p><strong>N'oubliez pas de réserver votre rendez-vous avant l'expiration !</strong></p>
+              
+              <p>Pour réserver votre rendez-vous, contactez-nous :</p>
+              
+              <div class="info-box">
+                <p><span class="label">🌐 Site :</span> https://www.lecocondelaura.fr</p>
+                <p><span class="label">📞 Téléphone :</span> 07 87 98 43 41</p>
+                <p><span class="label">📧 Email :</span> lecocondelaura17@gmail.com</p>
+                <p><span class="label">📍 Adresse :</span> 70 rue Sadi Carnot, 17500 Jonzac</p>
+              </div>
+
+              <p>Nous avons hâte de vous accueillir !</p>
+              <p>Le Cocon de Laura</p>
+            </div>
+            <div class="footer">
+              <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
+            </div>
+          </body>
+        </html>
+      `,
+      text: `
+Rappel carte cadeau - Le Cocon de Laura
+
+Bonjour ${appointment.prenom},
+
+Nous souhaitons vous rappeler que vous possédez une carte cadeau qui expire dans 3 mois.
+
+Date d'expiration : ${expirationDateFormatted}
+Il vous reste 3 mois pour l'utiliser !
+
+Service : ${appointment.service}
+Pour : ${appointment.prenom} ${appointment.nom}
+${appointment.codeCarteCadeau ? `Code : ${appointment.codeCarteCadeau}` : ""}
+
+N'oubliez pas de réserver votre rendez-vous avant l'expiration !
 
 Pour réserver votre rendez-vous :
 Téléphone : 07 87 98 43 41
@@ -727,24 +1515,236 @@ Adresse : 70 rue Sadi Carnot, 17500 Jonzac
 Nous avons hâte de vous accueillir !
 Laura - Le Cocon de Laura
       `,
-      attachments: [
-        {
-          filename: `Carte_Cadeau_${cardCode}.pdf`,
-          content: pdfBuffer,
-          contentType: "application/pdf",
-        },
-      ],
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(
-      `✅ Email avec carte cadeau envoyé au client ${appointment.email}`
-    );
+    console.log(`✅ Email de relance envoyé au client ${appointment.email}`);
     return true;
   } catch (error) {
     console.error(
-      "❌ Erreur lors de l'envoi de l'email avec carte cadeau:",
-      error.message
+      "❌ Erreur lors de l'envoi de l'email de relance:",
+      error.message,
+    );
+    return false;
+  }
+};
+
+// Envoyer un email de suivi post-séance (2-3 jours après la séance)
+export const sendFollowUpEmail = async (appointment) => {
+  try {
+    const transporter = createTransporter();
+
+    // Formater la date de la séance
+    const sessionDate = new Date(appointment.date);
+    const sessionDateFormatted = sessionDate.toLocaleDateString("fr-FR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // URL du site (peut être configurée dans .env)
+    const siteUrl = process.env.SITE_URL || "https://lecocondelaura.fr";
+
+    // Contenu de l'email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: appointment.email,
+      subject: `💆‍♀️ Comment s'est passée votre séance ? - Le Cocon de Laura`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="color-scheme" content="light">
+            <meta name="supported-color-schemes" content="light">
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                -webkit-text-size-adjust: 100%;
+                -ms-text-size-adjust: 100%;
+              }
+              .header {
+                background: #f0cfcf !important;
+                padding: 30px;
+                text-align: center;
+                border-radius: 10px 10px 0 0;
+                color: white !important;
+              }
+              .header h1 {
+                color: #ffffff !important;
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .header p {
+                color: #ffffff !important;
+                margin: 10px 0 0 0;
+                opacity: 1 !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              @media only screen and (max-width: 600px) {
+                .header {
+                  background-color: #f0cfcf !important;
+                  background: #f0cfcf !important;
+                }
+                .header h1 {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+                .header p {
+                  color: #ffffff !important;
+                  -webkit-text-fill-color: #ffffff !important;
+                }
+              }
+              [data-ogsc] .header {
+                background-color: #f0cfcf !important;
+                background: #f0cfcf !important;
+              }
+              [data-ogsc] .header h1 {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              [data-ogsc] .header p {
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+              }
+              .content {
+                background: #f9f9f9;
+                padding: 30px;
+                border-radius: 0 0 10px 10px;
+              }
+              .info-box {
+                background: white;
+                padding: 20px;
+                margin: 15px 0;
+                border-radius: 8px;
+                border-left: 4px solid #f0cfcf;
+              }
+              .cta-box {
+                background: #f0cfcf;
+                padding: 25px;
+                margin: 20px 0;
+                border-radius: 8px;
+                text-align: center;
+              }
+              .cta-button {
+                display: inline-block;
+                background: #8b6f6f;
+                color: white !important;
+                padding: 15px 30px;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: bold;
+                font-size: 16px;
+                margin-top: 10px;
+              }
+              .cta-button:hover {
+                background: #7a5f5f;
+              }
+              .label {
+                font-weight: bold;
+                color: #8b6f6f;
+                display: inline-block;
+                min-width: 120px;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #ddd;
+                color: #666;
+                font-size: 12px;
+              }
+            </style>
+          </head>
+          <body>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="#f0cfcf" style="background-color: #f0cfcf !important; border-radius: 10px 10px 0 0; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+              <tr>
+                <td bgcolor="#f0cfcf" style="padding: 30px; text-align: center; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-hide: all; -webkit-background-clip: padding-box; background-clip: padding-box;">
+                  <h1 bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 0; font-size: 24px; font-weight: bold; background-color: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">💆‍♀️ Comment s'est passée votre séance ?</h1>
+                  <p bgcolor="#f0cfcf" style="color: #ffffff !important; margin: 10px 0 0 0; background-color: #f0cfcf !important; background: #f0cfcf !important; mso-color-alt: #ffffff; -webkit-text-fill-color: #ffffff !important; text-fill-color: #ffffff !important;">Le Cocon de Laura</p>
+                </td>
+              </tr>
+            </table>
+            <div class="content">
+              <p>Bonjour ${appointment.prenom},</p>
+              
+              <p>Nous espérons que votre séance du <strong>${sessionDateFormatted}</strong> s'est bien passée !</p>
+              
+              <div class="info-box">
+                <p><span class="label">🌸 Soin :</span> ${appointment.service}</p>
+                <p><span class="label">📅 Date :</span> ${sessionDateFormatted}</p>
+                <p><span class="label">🕐 Heure :</span> ${appointment.heure}</p>
+              </div>
+
+              <p>Votre avis compte beaucoup pour nous ! Si vous souhaitez partager votre expérience, n'hésitez pas à laisser un avis sur notre site.</p>
+              
+              <div class="cta-box">
+                <p style="margin: 0 0 15px 0; color: #8b6f6f; font-weight: bold; font-size: 18px;">
+                  Partagez votre expérience
+                </p>
+                <a href="${siteUrl}" class="cta-button" style="color: #ffffff !important; text-decoration: none;">
+                  Laisser un avis
+                </a>
+              </div>
+
+              <p>Si vous avez des questions ou des commentaires, n'hésitez pas à nous contacter :</p>
+              
+              <div class="info-box">
+              <p><span class="label">🌐 Site :</span> https://www.lecocondelaura.fr</p>
+                <p><span class="label">📞 Téléphone :</span> 07 87 98 43 41</p>
+                <p><span class="label">📧 Email :</span> lecocondelaura17@gmail.com</p>
+                <p><span class="label">📍 Adresse :</span> 70 rue Sadi Carnot, 17500 Jonzac</p>
+              </div>
+
+              <p>Nous avons hâte de vous revoir !</p>
+              <p>Le Cocon de Laura</p>
+            </div>
+            <div class="footer">
+              <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.</p>
+            </div>
+          </body>
+        </html>
+      `,
+      text: `
+Comment s'est passée votre séance ? - Le Cocon de Laura
+
+Bonjour ${appointment.prenom},
+
+Nous espérons que votre séance du ${sessionDateFormatted} s'est bien passée !
+
+Service : ${appointment.service}
+Date : ${sessionDateFormatted}
+Heure : ${appointment.heure}
+
+Votre avis compte beaucoup pour nous ! Si vous souhaitez partager votre expérience, n'hésitez pas à laisser un avis sur notre site.
+
+Lien pour laisser un avis : ${siteUrl}
+
+Si vous avez des questions ou des commentaires :
+Téléphone : 07 87 98 43 41
+Email : lecocondelaura17@gmail.com
+Adresse : 70 rue Sadi Carnot, 17500 Jonzac
+
+Nous avons hâte de vous revoir !
+Laura - Le Cocon de Laura
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Email de suivi envoyé au client ${appointment.email}`);
+    return true;
+  } catch (error) {
+    console.error(
+      "❌ Erreur lors de l'envoi de l'email de suivi:",
+      error.message,
     );
     return false;
   }
