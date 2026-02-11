@@ -14,6 +14,7 @@ import {
 } from "../services/emailService.js";
 import {
   generateGiftCardPDF,
+  generateGiftCardPDFFromImage,
   getCustomGiftCardImage,
 } from "../services/giftCardService.js";
 import { isDateClosed } from "./closures.js";
@@ -414,14 +415,21 @@ router.post(
         appointment.codeCarteCadeau = cardCode;
       }
 
-      // Pièce jointe : image personnalisée (Backend/assets/carte-cadeau.png) ou PDF généré
+      // Pièce jointe : PDF personnalisé (image + texte) ou PDF généré par défaut
       const customImage = getCustomGiftCardImage();
       let attachment;
       if (customImage) {
+        const pdfBuffer = await generateGiftCardPDFFromImage(
+          appointment,
+          cardCode,
+          customImage.buffer,
+          customImage.width,
+          customImage.height
+        );
         attachment = {
-          buffer: customImage.buffer,
-          filename: `Carte_Cadeau_${cardCode}${path.extname(customImage.filename)}`,
-          contentType: customImage.contentType,
+          buffer: pdfBuffer,
+          filename: `Carte_Cadeau_${cardCode}.pdf`,
+          contentType: "application/pdf",
         };
       } else {
         const { buffer: pdfBuffer, code: generatedCode } =

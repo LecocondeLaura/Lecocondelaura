@@ -2,10 +2,10 @@
   {
     "id": 1,
     "title": "Kodomo",
-    "age": "Enfant (5-13 ans)",
-    "duration": "45min",
+    "age": "Enfant (5-10 ans)",
+    "duration": "60min",
     "price": {
-      "cabinet": 50
+      "cabinet": 70
     },
     "features": [
       "Diagnostic",

@@ -2,32 +2,127 @@ import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import sizeOf from "image-size";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const ASSETS_DIR = path.join(__dirname, "..", "assets");
-const CUSTOM_CARD_NAMES = ["carte-cadeau.png", "carte-cadeau.jpg", "carte-cadeau.jpeg"];
+const CUSTOM_CARD_NAMES = [
+  "carte-cadeau.png",
+  "carte-cadeau.jpg",
+  "carte-cadeau.jpeg",
+];
+
+// Conversion pixels → points (72 pts = 1 inch ; on suppose ~150 dpi pour l'image)
+const pxToPt = (px, dpi = 150) => (px * 72) / dpi;
 
 /**
  * Retourne l'image personnalisée de la carte cadeau si elle existe (dossier Backend/assets).
- * À remplir avec l'image envoyée par Laura : placer le fichier dans Backend/assets/carte-cadeau.png (ou .jpg).
- * @returns {{ buffer: Buffer, filename: string, contentType: string } | null}
+ * @returns {{ buffer: Buffer, filename: string, contentType: string, width?: number, height?: number } | null}
  */
 export const getCustomGiftCardImage = () => {
   for (const name of CUSTOM_CARD_NAMES) {
     const filePath = path.join(ASSETS_DIR, name);
     if (fs.existsSync(filePath)) {
+      const buffer = fs.readFileSync(filePath);
       const ext = path.extname(name).toLowerCase();
       const contentType = ext === ".png" ? "image/png" : "image/jpeg";
+      let width, height;
+      try {
+        const dims = sizeOf(buffer);
+        width = dims.width;
+        height = dims.height;
+      } catch (_) {
+        width = 1200;
+        height = 800;
+      }
       return {
-        buffer: fs.readFileSync(filePath),
+        buffer,
         filename: name,
         contentType,
+        width: width || 1200,
+        height: height || 800,
       };
     }
   }
   return null;
+};
+
+/**
+ * Génère un PDF à partir de l'image personnalisée avec les champs écrits dessus :
+ * Soin, Offert par, Valable jusqu'au (+ code carte)
+ * @param {Object} appointment - Données de la carte
+ * @param {string} cardCode - Code de la carte
+ * @param {Buffer} imageBuffer - Image de fond
+ * @param {number} imageWidth - Largeur en pixels
+ * @param {number} imageHeight - Hauteur en pixels
+ * @returns {Promise<Buffer>}
+ */
+export const generateGiftCardPDFFromImage = async (
+  appointment,
+  cardCode,
+  imageBuffer,
+  imageWidth,
+  imageHeight,
+) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const wPt = pxToPt(imageWidth);
+      const hPt = pxToPt(imageHeight);
+
+      const doc = new PDFDocument({
+        size: [wPt, hPt],
+        margins: 0,
+      });
+
+      const chunks = [];
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      doc.image(imageBuffer, 0, 0, { width: wPt, height: hPt });
+
+      const textColor = "#5c4033";
+      const left = wPt * 0.08;
+      const lineHeight = hPt * 0.09;
+      let y = hPt * 0.44;
+
+      doc.fontSize(18).fillColor(textColor).font("Helvetica-Bold");
+
+      doc.text(`Soin : ${appointment.service || ""}`, left, y, {
+        width: wPt * 0.55,
+      });
+      y += lineHeight;
+
+      doc.text(
+        `Offert par : ${appointment.prenom || ""} ${appointment.nom || ""}`,
+        left,
+        y,
+        { width: wPt * 0.55 },
+      );
+      y += lineHeight;
+
+      const validUntil = new Date();
+      validUntil.setMonth(validUntil.getMonth() + 6);
+      const validStr = validUntil.toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      doc.text(`Valable jusqu'au : ${validStr}`, left, y, {
+        width: wPt * 0.55,
+      });
+      y += lineHeight * 1.3;
+
+      doc.fontSize(14).fillColor("#6b5344").font("Helvetica-Bold");
+      doc.text(`Code : ${cardCode}`, left, y, { width: wPt * 0.55 });
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
 };
 
 /**

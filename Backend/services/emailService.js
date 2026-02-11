@@ -1,5 +1,19 @@
 import nodemailer from "nodemailer";
 
+// Prix des soins (aligné avec Frontend/src/Data/Service.json) — Kodomo 70€, Rituel Détente 120€, Rituel Ultime 140€
+const getPriceForService = (serviceName) => {
+  if (!serviceName) return null;
+  if (serviceName.includes("Kodomo")) return 70;
+  if (serviceName.includes("Rituel Détente")) return 120;
+  if (serviceName.includes("Rituel Ultime")) return 140;
+  return null;
+};
+
+const formatPriceInEmail = (serviceName) => {
+  const price = getPriceForService(serviceName);
+  return price != null ? `${price} €` : "";
+};
+
 // Configuration du transporteur email
 const createTransporter = () => {
   return nodemailer.createTransport({
@@ -302,6 +316,8 @@ export const sendClientConfirmationEmail = async (appointment) => {
       },
     );
 
+    const priceStr = formatPriceInEmail(appointment.service);
+
     // Contenu de l'email
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -413,6 +429,7 @@ export const sendClientConfirmationEmail = async (appointment) => {
                 <p><span class="label">🌸 Soin :</span> ${appointment.service}</p>
                 <p><span class="label">📅 Date :</span> ${dateFormatted}</p>
                 <p><span class="label">🕐 Heure :</span> ${appointment.heure}</p>
+                ${priceStr ? `<p><span class="label">💳 Prix :</span> ${priceStr}</p>` : ""}
               </div>
 
               <p>Nous avons hâte de vous accueillir au salon !</p>
@@ -447,6 +464,7 @@ Nous avons le plaisir de confirmer votre réservation :
 Soin : ${appointment.service}
 Date : ${dateFormatted}
 Heure : ${appointment.heure}
+${priceStr ? `Prix : ${priceStr}` : ""}
 
 Nous avons hâte de vous accueillir au salon !
 
@@ -619,6 +637,7 @@ export const sendGiftCardRequestEmail = async (appointment) => {
               <div class="info-box">
                 <p style="margin: 5px 0;"><span class="label">🌸 Soin :</span> ${appointment.service}</p>
                 <p style="margin: 5px 0;"><span class="label">👤 Pour :</span> ${appointment.prenom} ${appointment.nom}</p>
+                ${formatPriceInEmail(appointment.service) ? `<p style="margin: 5px 0;"><span class="label">💳 Prix :</span> ${formatPriceInEmail(appointment.service)}</p>` : ""}
               </div>
 
               <p style="margin: 20px 0 15px 0;"><strong>Pour finaliser votre commande, veuillez effectuer le virement bancaire aux coordonnées suivantes :</strong></p>
@@ -655,6 +674,7 @@ Merci pour votre demande de carte cadeau !
 
 Soin : ${appointment.service}
 Pour : ${appointment.prenom} ${appointment.nom}
+${formatPriceInEmail(appointment.service) ? `Prix : ${formatPriceInEmail(appointment.service)}` : ""}
 
 Pour finaliser votre commande, veuillez effectuer le virement bancaire aux coordonnées suivantes :
 
@@ -822,6 +842,7 @@ export const sendGiftCardEmail = async (appointment, attachment, cardCode) => {
               <div class="info-box">
                 <p><span class="label">🌸 Soin :</span> ${appointment.service}</p>
                 <p><span class="label">👤 Pour :</span> ${appointment.prenom} ${appointment.nom}</p>
+                ${formatPriceInEmail(appointment.service) ? `<p><span class="label">💳 Prix :</span> ${formatPriceInEmail(appointment.service)}</p>` : ""}
               </div>
 
               <div class="code-box">
@@ -864,6 +885,7 @@ Merci pour votre commande ! Votre carte cadeau est prête.
 
 Soin : ${appointment.service}
 Pour : ${appointment.prenom} ${appointment.nom}
+${formatPriceInEmail(appointment.service) ? `Prix : ${formatPriceInEmail(appointment.service)}` : ""}
 
 Numéro de la carte : ${cardCode}
 
@@ -1048,6 +1070,7 @@ export const sendCancellationEmail = async (appointment) => {
                 <p><span class="label">🌸 Soin :</span> ${appointment.service}</p>
                 <p><span class="label">📅 Date :</span> ${dateFormatted}</p>
                 <p><span class="label">🕐 Heure :</span> ${appointment.heure}</p>
+                ${formatPriceInEmail(appointment.service) ? `<p><span class="label">💳 Prix :</span> ${formatPriceInEmail(appointment.service)}</p>` : ""}
               </div>
 
               <p>Nous sommes désolés pour ce désagrément. Si vous souhaitez prendre un nouveau rendez-vous, n'hésitez pas à nous contacter :</p>
@@ -1078,6 +1101,7 @@ Nous vous informons que votre rendez-vous a été annulé :
 Soin : ${appointment.service}
 Date : ${dateFormatted}
 Heure : ${appointment.heure}
+${formatPriceInEmail(appointment.service) ? `Prix : ${formatPriceInEmail(appointment.service)}` : ""}
 
 Nous sommes désolés pour ce désagrément. Si vous souhaitez prendre un nouveau rendez-vous, n'hésitez pas à nous contacter :
 

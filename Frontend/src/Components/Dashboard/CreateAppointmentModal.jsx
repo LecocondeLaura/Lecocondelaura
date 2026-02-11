@@ -27,7 +27,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
   const [errors, setErrors] = useState({});
 
   const services = [
-    "Head Spa  Kodomo - 45min (enfant)",
+    "Head Spa Kodomo - 60min (enfant)",
     "Head Spa Rituel Détente - 60min",
     "Head Spa Rituel Ultime - 90min",
   ];

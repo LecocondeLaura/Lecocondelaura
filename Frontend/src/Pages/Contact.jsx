@@ -334,7 +334,7 @@ function Contact() {
   };
 
   const services = [
-    "Head Spa Kodomo - 45min (enfant)",
+    "Head Spa Kodomo - 60min (enfant)",
     "Head Spa Rituel Détente - 60min",
     "Head Spa Rituel Ultime - 90min",
   ];
@@ -503,7 +503,9 @@ function Contact() {
                   {upcomingClosures.length > 0 && (
                     <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200">
                       <p className="text-amber-800 font-semibold text-sm flex items-center gap-2 mb-2">
-                        <span className="text-lg" aria-hidden>📅</span>
+                        <span className="text-lg" aria-hidden>
+                          📅
+                        </span>
                         Le salon sera fermé
                       </p>
                       <ul className="text-amber-700 text-sm space-y-1">
