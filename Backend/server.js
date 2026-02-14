@@ -16,9 +16,20 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5005;
 
-// CORS : en prod, autoriser le front (FRONTEND_URL, sans slash final pour matcher Origin)
+// CORS : autoriser le front (avec et sans www)
 const frontOrigin = process.env.FRONTEND_URL?.replace(/\/+$/, "") || null;
-const corsOptions = frontOrigin ? { origin: frontOrigin, credentials: true } : {};
+const allowedOrigins = [];
+if (frontOrigin) {
+  allowedOrigins.push(frontOrigin);
+  const withWww = frontOrigin.startsWith("https://www.")
+    ? frontOrigin
+    : frontOrigin.replace(/^(https:\/\/)/, "$1www.");
+  const withoutWww = frontOrigin.replace(/^https:\/\/www\./, "https://");
+  if (withWww !== frontOrigin) allowedOrigins.push(withWww);
+  if (withoutWww !== frontOrigin) allowedOrigins.push(withoutWww);
+}
+const corsOptions =
+  allowedOrigins.length > 0 ? { origin: allowedOrigins, credentials: true } : {};
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

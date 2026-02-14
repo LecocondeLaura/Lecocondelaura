@@ -24,8 +24,9 @@ function Login() {
     setIsLoading(true);
     setError("");
 
+    const loginUrl = `${API_BASE_URL.replace(/\/+$/, "")}/auth/login`;
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(loginUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -33,20 +34,35 @@ function Login() {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        if (response.status === 405) {
+          setError(
+            "Erreur 405 : l’URL de l’API est incorrecte. Sur Vercel, définissez VITE_API_URL avec l’URL Railway se terminant par /api (ex. https://xxx.up.railway.app/api), puis redéployez."
+          );
+          return;
+        }
+        setError("Réponse du serveur invalide. Vérifiez l’URL de l’API (VITE_API_URL sur Vercel).");
+        return;
+      }
 
       if (data.success) {
-        // Sauvegarder le token dans localStorage
         localStorage.setItem("token", data.data.token);
         localStorage.setItem("user", JSON.stringify(data.data.user));
-        // Rediriger vers le dashboard
         navigate("/dashboard");
       } else {
         setError(data.message || "Erreur de connexion");
       }
-    } catch (error) {
-      console.error("Erreur lors de la connexion:", error);
-      setError("Erreur de connexion. Veuillez réessayer.");
+    } catch (err) {
+      console.error("Erreur lors de la connexion:", err);
+      setError(
+        err.message?.includes("fetch") || err.message?.includes("Network")
+          ? "Impossible de joindre l’API. Vérifiez VITE_API_URL sur Vercel (URL publique Railway + /api) et redéployez."
+          : "Erreur de connexion. Veuillez réessayer."
+      );
     } finally {
       setIsLoading(false);
     }
