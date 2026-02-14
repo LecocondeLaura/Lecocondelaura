@@ -14,15 +14,68 @@ const formatPriceInEmail = (serviceName) => {
   return price != null ? `${price} €` : "";
 };
 
-// Configuration du transporteur email
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || "gmail", // gmail, outlook, yahoo, etc.
-    auth: {
-      user: process.env.EMAIL_USER, // Votre adresse email
-      pass: process.env.EMAIL_PASSWORD, // Votre mot de passe ou App Password
+// Envoi via Resend (API HTTPS) — fonctionne sur Railway sans SMTP
+const sendViaResend = async (mailOptions) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  const from = mailOptions.from || process.env.EMAIL_USER || "Le Cocon de Laura <onboarding@resend.dev>";
+  const to = Array.isArray(mailOptions.to) ? mailOptions.to[0] : mailOptions.to;
+  const payload = {
+    from: typeof from === "string" ? from : `${from.name} <${from.address}>`,
+    to: [to],
+    subject: mailOptions.subject,
+    html: mailOptions.html || "",
+  };
+  if (mailOptions.attachments?.length) {
+    payload.attachments = mailOptions.attachments.map((a) => {
+      const content = a.content || a.raw;
+      const base64 = Buffer.isBuffer(content) ? content.toString("base64") : Buffer.from(String(content)).toString("base64");
+      return { filename: a.filename || "attachment", content: base64 };
+    });
+  }
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
     },
+    body: JSON.stringify(payload),
   });
+  if (!res.ok) {
+    const err = new Error(`Resend: ${res.status} ${await res.text()}`);
+    throw err;
+  }
+  return { messageId: (await res.json()).id };
+};
+
+// Configuration du transporteur email
+// Sur Railway Free/Hobby : SMTP sortant est bloqué → utiliser RESEND_API_KEY (Resend.com, gratuit).
+const createTransporter = () => {
+  const resendKey = process.env.RESEND_API_KEY;
+  if (resendKey) {
+    return {
+      sendMail: async (mailOptions) => sendViaResend(mailOptions),
+    };
+  }
+  const service = (process.env.EMAIL_SERVICE || "gmail").toLowerCase();
+  const isGmail = service === "gmail";
+  const config = {
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 10000,
+  };
+  if (isGmail) {
+    config.host = "smtp.gmail.com";
+    config.port = 587;
+    config.secure = false;
+    config.requireTLS = true;
+  } else {
+    config.service = service;
+  }
+  return nodemailer.createTransport(config);
 };
 
 // Générer l'URL Google Calendar pour ajouter un événement
