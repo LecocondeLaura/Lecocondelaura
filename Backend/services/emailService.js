@@ -1,5 +1,3 @@
-import nodemailer from "nodemailer";
-
 // Prix des soins (aligné avec Frontend/src/Data/Service.json) — Kodomo 70€, Rituel Détente 120€, Rituel Ultime 140€
 const getPriceForService = (serviceName) => {
   if (!serviceName) return null;
@@ -14,18 +12,28 @@ const formatPriceInEmail = (serviceName) => {
   return price != null ? `${price} €` : "";
 };
 
+// Envoi uniquement via Resend, avec le domaine vérifié lecocondelaura.fr
+const DEFAULT_RESEND_FROM = "Le Cocon de Laura <contact@lecocondelaura.fr>";
+
+const getResendFrom = () => {
+  const explicit = process.env.RESEND_FROM?.trim();
+  return explicit || DEFAULT_RESEND_FROM;
+};
+
 // Envoi via Resend (API HTTPS) — fonctionne sur Railway sans SMTP
 const sendViaResend = async (mailOptions) => {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return null;
-  const from = mailOptions.from || process.env.EMAIL_USER || "Le Cocon de Laura <onboarding@resend.dev>";
+  const from = getResendFrom();
   const to = Array.isArray(mailOptions.to) ? mailOptions.to[0] : mailOptions.to;
   const payload = {
-    from: typeof from === "string" ? from : `${from.name} <${from.address}>`,
+    from,
     to: [to],
     subject: mailOptions.subject,
     html: mailOptions.html || "",
   };
+  const replyTo = process.env.RESEND_REPLY_TO?.trim() || process.env.RECIPIENT_EMAIL?.trim();
+  if (replyTo) payload.reply_to = replyTo;
   if (mailOptions.attachments?.length) {
     payload.attachments = mailOptions.attachments.map((a) => {
       const content = a.content || a.raw;
@@ -48,34 +56,17 @@ const sendViaResend = async (mailOptions) => {
   return { messageId: (await res.json()).id };
 };
 
-// Configuration du transporteur email
-// Sur Railway Free/Hobby : SMTP sortant est bloqué → utiliser RESEND_API_KEY (Resend.com, gratuit).
+// Envoi d'emails : uniquement via Resend (domaine lecocondelaura.fr vérifié sur resend.com)
 const createTransporter = () => {
   const resendKey = process.env.RESEND_API_KEY;
-  if (resendKey) {
-    return {
-      sendMail: async (mailOptions) => sendViaResend(mailOptions),
-    };
+  if (!resendKey) {
+    throw new Error(
+      "RESEND_API_KEY est requis. Configurez-le sur Railway (resend.com → API Keys)."
+    );
   }
-  const service = (process.env.EMAIL_SERVICE || "gmail").toLowerCase();
-  const isGmail = service === "gmail";
-  const config = {
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
-    },
-    connectionTimeout: 15000,
-    greetingTimeout: 10000,
+  return {
+    sendMail: async (mailOptions) => sendViaResend(mailOptions),
   };
-  if (isGmail) {
-    config.host = "smtp.gmail.com";
-    config.port = 587;
-    config.secure = false;
-    config.requireTLS = true;
-  } else {
-    config.service = service;
-  }
-  return nodemailer.createTransport(config);
 };
 
 // Générer l'URL Google Calendar pour ajouter un événement
