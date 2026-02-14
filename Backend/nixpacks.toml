@@ -1,0 +1,11 @@
+# Config Nixpacks/Railpack pour Railway
+# Utilisé quand le Root Directory du service est défini sur "Backend"
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[start]
+cmd = "npm start"

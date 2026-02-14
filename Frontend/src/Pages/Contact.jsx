@@ -6,7 +6,7 @@ import {
 import API_BASE_URL from "../config/api.config.js";
 
 function Contact() {
-  const showAdress = false;
+  const showAdress = true;
   const [upcomingClosures, setUpcomingClosures] = useState([]);
   const [formData, setFormData] = useState({
     nom: "",
@@ -604,7 +604,7 @@ function Contact() {
                         htmlFor="service"
                         className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
                       >
-                        Service souhaité *
+                        Soins souhaités *
                       </label>
                       <select
                         id="service"
@@ -614,7 +614,7 @@ function Contact() {
                         required
                         className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white appearance-none cursor-pointer"
                       >
-                        <option value="">Sélectionnez un service</option>
+                        <option value="">Sélectionnez un soin</option>
                         {services.map((service, index) => (
                           <option key={index} value={service}>
                             {service}

@@ -16,8 +16,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5005;
 
-// Middleware
-app.use(cors());
+// CORS : en prod, autoriser uniquement le front (Vercel) si FRONTEND_URL est défini
+const corsOptions = process.env.FRONTEND_URL
+  ? { origin: process.env.FRONTEND_URL, credentials: true }
+  : {};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

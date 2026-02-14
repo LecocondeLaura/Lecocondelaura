@@ -50,7 +50,7 @@ function Header() {
                 isActive("/services") ? "border-b-2 border-white" : ""
               }`}
             >
-              Services
+              Soins
             </Link>
             <Link
               to="/contact"
@@ -112,7 +112,7 @@ function Header() {
               }`}
               onClick={() => setIsMenuOpen(false)}
             >
-              Services
+              Soins
             </Link>
             <Link
               to="/contact"
