@@ -158,15 +158,6 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
     if (!formData.date) newErrors.date = "La date est requise";
     if (!formData.heure) newErrors.heure = "L'heure est requise";
 
-    // Vérifier que ce n'est pas un dimanche
-    if (formData.date) {
-      const selectedDate = new Date(formData.date);
-      const dayOfWeek = selectedDate.getDay();
-      if (dayOfWeek === 0) {
-        newErrors.date = "Le dimanche n'est pas disponible";
-      }
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

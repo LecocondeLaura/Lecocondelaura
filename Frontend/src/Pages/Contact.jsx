@@ -23,7 +23,6 @@ function Contact() {
   const [isLoading, setIsLoading] = useState(false);
   const [availableTimes, setAvailableTimes] = useState([]);
   const [isDateClosed, setIsDateClosed] = useState(false);
-  const [showSundayAlert, setShowSundayAlert] = useState(false);
   const [carteCadeaux, setCarteCadeaux] = useState(false);
 
   const allTimes = ["09:00", "11:00", "14:00", "16:00", "18:00"];
@@ -212,25 +211,6 @@ function Contact() {
       return;
     }
 
-    // Vérifier si la date sélectionnée est un dimanche
-    if (name === "date" && value) {
-      const selectedDate = new Date(value);
-      const dayOfWeek = selectedDate.getDay(); // 0 = dimanche, 1 = lundi, etc.
-
-      if (dayOfWeek === 0) {
-        setShowSundayAlert(true);
-        setFormData((prev) => ({
-          ...prev,
-          date: "",
-        }));
-        // Masquer la popup après 4 secondes
-        setTimeout(() => {
-          setShowSundayAlert(false);
-        }, 4000);
-        return;
-      }
-    }
-
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -250,19 +230,6 @@ function Contact() {
           setIsLoading(false);
           return;
         }
-        // Vérifier que ce n'est pas un dimanche
-        const selectedDate = new Date(formData.date);
-        const dayOfWeek = selectedDate.getDay();
-        if (dayOfWeek === 0) {
-          setShowSundayAlert(true);
-          setIsLoading(false);
-          // Masquer la popup après 4 secondes
-          setTimeout(() => {
-            setShowSundayAlert(false);
-          }, 4000);
-          return;
-        }
-
         // Vérifier que le créneau est toujours disponible
         const result = await getAvailableTimesForDate(formData.date, allTimes);
 
@@ -341,60 +308,6 @@ function Contact() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fef5f5] via-white to-[#fef5f5] pt-20 pb-16 px-4 sm:px-6 lg:px-12 lg:pt-16 lg:pb-20 lg:mt-20 mt-12 relative">
-      {/* Toast chaleureux pour dimanche */}
-      {showSundayAlert && (
-        <div className="fixed top-4 sm:top-10 left-1/2 transform -translate-x-1/2 z-50 animate-toast-in w-full px-4 sm:px-0 sm:w-auto">
-          <div className="bg-gradient-to-br from-[#fef5f5] to-white rounded-2xl shadow-lg p-4 sm:p-5 max-w-sm mx-auto border border-[#f0cfcf]/30 backdrop-blur-sm">
-            <div className="flex items-start space-x-3 sm:space-x-4">
-              <div className="flex-shrink-0 mt-0.5 sm:mt-1">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#f0cfcf] to-[#e0bfbf] flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 sm:w-6 sm:h-6 text-[#8b6f6f]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base sm:text-lg font-semibold text-[#8b6f6f] mb-1">
-                  Dimanche fermé
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                  Nous sommes fermés le dimanche. Veuillez choisir un autre jour
-                  pour votre rendez-vous.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowSundayAlert(false)}
-                className="flex-shrink-0 text-gray-400 hover:text-[#8b6f6f] transition-colors ml-1 sm:ml-2"
-              >
-                <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="max-w-[1600px] mx-auto h-full">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-12 items-start h-full">
           {/* Colonne gauche : Titre et informations */}

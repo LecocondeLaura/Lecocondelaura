@@ -133,18 +133,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Vérifier que ce n'est pas un dimanche (seulement pour les rendez-vous)
     if (!carteCadeaux && date) {
-      const appointmentDate = new Date(date);
-      const dayOfWeek = appointmentDate.getDay(); // 0 = dimanche
-      if (dayOfWeek === 0) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Le dimanche n'est pas disponible. Veuillez choisir un autre jour.",
-        });
-      }
-
       // Vérifier si le salon est fermé (congés / fermeture) ce jour-là
       const closed = await isDateClosed(date);
       if (closed) {
