@@ -5,8 +5,8 @@ function Footer() {
   const location = useLocation();
   const currentYear = new Date().getFullYear();
 
-  // Ne pas afficher le Footer sur les pages login et dashboard
-  if (location.pathname === "/login" || location.pathname === "/dashboard") {
+  // Ne pas afficher le Footer sur les pages login et dashboard (et sous-routes)
+  if (location.pathname === "/login" || location.pathname.startsWith("/dashboard")) {
     return null;
   }
 

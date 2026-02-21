@@ -1,5 +1,5 @@
 // Prix des soins (aligné avec Frontend/src/Data/Service.json) — Kodomo 70€, Rituel Détente 120€, Rituel Ultime 140€
-const getPriceForService = (serviceName) => {
+export const getPriceForService = (serviceName) => {
   if (!serviceName) return null;
   if (serviceName.includes("Kodomo")) return 70;
   if (serviceName.includes("Rituel Détente")) return 120;

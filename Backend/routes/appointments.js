@@ -3,6 +3,7 @@ import path from "path";
 import Appointment from "../models/Appointment.js";
 import { authenticateToken } from "../middleware/auth.js";
 import {
+  getPriceForService,
   sendAppointmentNotification,
   sendClientConfirmationEmail,
   sendGiftCardRequestEmail,
@@ -32,6 +33,92 @@ router.get("/", authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Erreur lors de la récupération des rendez-vous",
+      error: error.message,
+    });
+  }
+});
+
+// Retourne le lundi 00:00:00 de la semaine ISO (year, week)
+function getMondayOfISOWeek(year, week) {
+  const jan4 = new Date(year, 0, 4);
+  const dayOfJan4 = jan4.getDay();
+  const mondayOffset = dayOfJan4 === 0 ? -6 : 1 - dayOfJan4;
+  const mondayOfWeek1 = new Date(year, 0, 4 + mondayOffset);
+  const monday = new Date(mondayOfWeek1);
+  monday.setDate(mondayOfWeek1.getDate() + (week - 1) * 7);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+// GET - Chiffre d'affaires semaine et mois (RDV payés, protégé)
+// Query: weekYear, week (ISO 1-53), year, month (1-12) — défaut = période courante
+router.get("/stats/revenue", authenticateToken, async (req, res) => {
+  try {
+    const now = new Date();
+    const weekYear = req.query.weekYear != null ? parseInt(req.query.weekYear, 10) : now.getFullYear();
+    const weekNum = req.query.week != null ? parseInt(req.query.week, 10) : null;
+    const monthYear = req.query.year != null ? parseInt(req.query.year, 10) : now.getFullYear();
+    const monthNum = req.query.month != null ? parseInt(req.query.month, 10) : null;
+
+    let startOfWeek;
+    let endOfWeek;
+    if (weekNum != null && !Number.isNaN(weekNum) && weekNum >= 1 && weekNum <= 53) {
+      startOfWeek = getMondayOfISOWeek(weekYear, weekNum);
+      endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+    } else {
+      const dayOfWeek = now.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() + mondayOffset);
+      startOfWeek.setHours(0, 0, 0, 0);
+      endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+    }
+
+    const month = monthNum != null && !Number.isNaN(monthNum) && monthNum >= 1 && monthNum <= 12
+      ? monthNum - 1
+      : now.getMonth();
+    const year = !Number.isNaN(monthYear) ? monthYear : now.getFullYear();
+    const startOfMonth = new Date(year, month, 1, 0, 0, 0, 0);
+    const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+    const paidFilter = {
+      paiementEffectue: true,
+      status: { $in: ["pending", "confirmed", "completed"] },
+      carteCadeaux: false,
+    };
+
+    const [appointmentsWeek, appointmentsMonth] = await Promise.all([
+      Appointment.find({
+        ...paidFilter,
+        date: { $gte: startOfWeek, $lte: endOfWeek },
+      }).select("service"),
+      Appointment.find({
+        ...paidFilter,
+        date: { $gte: startOfMonth, $lte: endOfMonth },
+      }).select("service"),
+    ]);
+
+    const sumRevenue = (list) =>
+      list.reduce((acc, apt) => acc + (getPriceForService(apt.service) || 0), 0);
+
+    res.json({
+      success: true,
+      data: {
+        week: sumRevenue(appointmentsWeek),
+        month: sumRevenue(appointmentsMonth),
+        weekStart: startOfWeek.toISOString().slice(0, 10),
+        weekEnd: endOfWeek.toISOString().slice(0, 10),
+        monthLabel: `${year}-${String(month + 1).padStart(2, "0")}`,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors du calcul du chiffre d'affaires",
       error: error.message,
     });
   }

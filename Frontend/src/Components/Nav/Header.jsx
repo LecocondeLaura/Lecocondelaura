@@ -6,8 +6,8 @@ function Header() {
 
   const isActive = (path) => location.pathname === path;
 
-  // Ne pas afficher le Header sur les pages login et dashboard
-  if (location.pathname === "/login" || location.pathname === "/dashboard") {
+  // Ne pas afficher le Header sur les pages login et dashboard (et sous-routes)
+  if (location.pathname === "/login" || location.pathname.startsWith("/dashboard")) {
     return null;
   }
 

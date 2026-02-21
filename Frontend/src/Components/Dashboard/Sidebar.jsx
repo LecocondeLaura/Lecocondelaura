@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
+  HomeIcon,
   ChatBubbleLeftRightIcon,
   UserGroupIcon,
   GiftIcon,
@@ -23,6 +24,12 @@ function Sidebar({ onLogout, onClose }) {
 
   const menuItems = [
     {
+      name: "Tableau de bord",
+      path: "/dashboard",
+      icon: HomeIcon,
+      notificationKey: null,
+    },
+    {
       name: "Agenda",
       path: "/dashboard/agenda",
       icon: CalendarIcon,
@@ -30,7 +37,7 @@ function Sidebar({ onLogout, onClose }) {
     },
     {
       name: "Avis clients",
-      path: "/dashboard",
+      path: "/dashboard/avis-clients",
       icon: ChatBubbleLeftRightIcon,
       notificationKey: "reviews",
     },

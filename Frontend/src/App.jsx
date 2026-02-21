@@ -11,6 +11,7 @@ import Contact from "./Pages/Contact";
 import Services from "./Pages/Services";
 import Login from "./Pages/Login";
 import Dashboard from "./Pages/Dashboard";
+import TableauDeBord from "./Pages/TableauDeBord";
 import Clients from "./Pages/Clients";
 import GiftCards from "./Pages/GiftCards";
 import Agenda from "./Pages/Agenda";
@@ -103,6 +104,14 @@ function App() {
           />
           <Route
             path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <TableauDeBord />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/avis-clients"
             element={
               <ProtectedRoute>
                 <Dashboard />

@@ -16,20 +16,37 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5005;
 
-// CORS : autoriser le front (avec et sans www)
+// CORS : en prod = uniquement FRONTEND_URL ; en dev = + localhost (Vite)
 const frontOrigin = process.env.FRONTEND_URL?.replace(/\/+$/, "") || null;
 const allowedOrigins = [];
-if (frontOrigin) {
-  allowedOrigins.push(frontOrigin);
-  const withWww = frontOrigin.startsWith("https://www.")
-    ? frontOrigin
-    : frontOrigin.replace(/^(https:\/\/)/, "$1www.");
-  const withoutWww = frontOrigin.replace(/^https:\/\/www\./, "https://");
-  if (withWww !== frontOrigin) allowedOrigins.push(withWww);
-  if (withoutWww !== frontOrigin) allowedOrigins.push(withoutWww);
+if (process.env.NODE_ENV !== "production") {
+  allowedOrigins.push(
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174"
+  );
 }
-const corsOptions =
-  allowedOrigins.length > 0 ? { origin: allowedOrigins, credentials: true } : {};
+if (frontOrigin) {
+  const fullOrigin = frontOrigin.startsWith("http") ? frontOrigin : `https://${frontOrigin}`;
+  allowedOrigins.push(fullOrigin);
+  const withWww = fullOrigin.startsWith("https://www.")
+    ? fullOrigin
+    : fullOrigin.replace(/^(https:\/\/)/, "$1www.");
+  const withoutWww = fullOrigin.replace(/^https:\/\/www\./, "https://");
+  if (withWww !== fullOrigin) allowedOrigins.push(withWww);
+  if (withoutWww !== fullOrigin) allowedOrigins.push(withoutWww);
+}
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  credentials: true,
+};
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
