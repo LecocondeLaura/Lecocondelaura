@@ -59,7 +59,7 @@ const appointmentSchema = new mongoose.Schema(
     },
     moyenPaiement: {
       type: String,
-      enum: ["especes", "cheque"],
+      enum: ["especes", "cheque", "virement"],
       default: null,
       trim: true,
     },

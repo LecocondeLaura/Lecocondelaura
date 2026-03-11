@@ -162,6 +162,7 @@ function AppointmentModal({ appointment, onClose, onDelete, onSendFollowUp, onUp
                       <option value="">—</option>
                       <option value="especes">Espèces</option>
                       <option value="cheque">Chèque</option>
+                      <option value="virement">Virement</option>
                     </select>
                   ) : (
                     <span
@@ -175,6 +176,8 @@ function AppointmentModal({ appointment, onClose, onDelete, onSendFollowUp, onUp
                         ? "Espèces"
                         : appointment.moyenPaiement === "cheque"
                         ? "Chèque"
+                        : appointment.moyenPaiement === "virement"
+                        ? "Virement"
                         : "—"}
                     </span>
                   )}

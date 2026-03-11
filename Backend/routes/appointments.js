@@ -390,13 +390,13 @@ router.patch("/:id/paiement", authenticateToken, async (req, res) => {
       if (moyenPaiement === null || moyenPaiement === "") {
         update.moyenPaiement = null;
         update.paiementEffectue = false;
-      } else if (["especes", "cheque"].includes(moyenPaiement)) {
+      } else if (["especes", "cheque", "virement"].includes(moyenPaiement)) {
         update.moyenPaiement = moyenPaiement;
         update.paiementEffectue = true;
       } else {
         return res.status(400).json({
           success: false,
-          message: "moyenPaiement doit être 'especes', 'cheque' ou vide",
+          message: "moyenPaiement doit être 'especes', 'cheque', 'virement' ou vide",
         });
       }
     }
