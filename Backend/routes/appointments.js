@@ -45,7 +45,17 @@ const normalizeDateForStorage = (dateInput) => {
   if (isDateOnlyString(dateInput)) {
     return new Date(`${dateInput}T12:00:00.000Z`);
   }
-  return new Date(dateInput);
+  if (typeof dateInput === "string" && /^\d{4}-\d{2}-\d{2}T/.test(dateInput)) {
+    const dayPart = dateInput.slice(0, 10);
+    if (isDateOnlyString(dayPart)) {
+      return new Date(`${dayPart}T12:00:00.000Z`);
+    }
+  }
+  const parsed = new Date(dateInput);
+  const y = parsed.getUTCFullYear();
+  const m = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(parsed.getUTCDate()).padStart(2, "0");
+  return new Date(`${y}-${m}-${d}T12:00:00.000Z`);
 };
 
 // GET - Récupérer tous les rendez-vous (protégé)
@@ -260,8 +270,13 @@ router.post("/", async (req, res) => {
       date,
       heure,
       message,
-      carteCadeaux,
+      carteCadeaux: carteCadeauxRaw,
     } = req.body;
+    const carteCadeaux =
+      carteCadeauxRaw === true ||
+      carteCadeauxRaw === "true" ||
+      carteCadeauxRaw === 1 ||
+      carteCadeauxRaw === "1";
 
     // Vérifier que tous les champs requis sont présents
     if (!nom || !prenom || !email || !telephone || !service) {
@@ -309,7 +324,7 @@ router.post("/", async (req, res) => {
       service,
       message: message || "",
       status: "pending",
-      carteCadeaux: carteCadeaux || false,
+      carteCadeaux,
     };
 
     // Ajouter date et heure seulement si ce n'est pas une carte cadeaux

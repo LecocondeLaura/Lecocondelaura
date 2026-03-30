@@ -14,6 +14,13 @@ const ALL_CAL_SLOTS = ["09:00", "11:00", "14:00", "16:00", "18:00"];
 const CAL_MORNING = ["09:00", "11:00"];
 const CAL_AFTERNOON = ["14:00", "16:00", "18:00"];
 
+function toLocalDateKey(dateValue) {
+  const d = new Date(dateValue);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+}
+
 function getBlockedSlotsForCalendarDay(year, month, day, closuresList) {
   const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
     day
@@ -52,8 +59,7 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
   const appointmentsByDate = {};
   appointments.forEach((apt) => {
     if (apt.date && !apt.carteCadeaux) {
-      const aptDate = new Date(apt.date);
-      const dateKey = aptDate.toISOString().slice(0, 10);
+      const dateKey = toLocalDateKey(apt.date);
       if (!appointmentsByDate[dateKey]) {
         appointmentsByDate[dateKey] = [];
       }
@@ -124,9 +130,7 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
   // Nombre de rendez-vous dans le mois affiché (exclut cartes cadeaux)
   const appointmentsThisMonthCount = appointments.filter((apt) => {
     if (!apt.date || apt.carteCadeaux) return false;
-    const aptDate = new Date(apt.date);
-    const [aptYear, aptMonth] = aptDate
-      .toISOString()
+    const [aptYear, aptMonth] = toLocalDateKey(apt.date)
       .slice(0, 7)
       .split("-")
       .map(Number);
