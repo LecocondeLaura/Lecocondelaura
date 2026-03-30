@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Closure from "./Closure.js";
 
 const appointmentSchema = new mongoose.Schema(
   {
@@ -59,7 +60,7 @@ const appointmentSchema = new mongoose.Schema(
     },
     moyenPaiement: {
       type: String,
-      enum: ["especes", "cheque", "virement"],
+      enum: ["especes", "cheque", "virement", "carte_cadeaux"],
       default: null,
       trim: true,
     },
@@ -164,12 +165,31 @@ const getBlockedSlots = (startTime, serviceName) => {
 };
 
 // Vérifier si un créneau est disponible
-appointmentSchema.statics.isTimeSlotAvailable = async function (date, heure, service) {
+appointmentSchema.statics.isTimeSlotAvailable = async function (
+  date,
+  heure,
+  service,
+  excludeAppointmentId = null
+) {
+  const closureBlocked = await Closure.getBlockedSlotTimesForDate(date);
+  if (closureBlocked.has(heure)) {
+    return false;
+  }
+
+  const activeStatuses = ["pending", "confirmed", "completed"];
+  const baseQuery =
+    excludeAppointmentId != null
+      ? {
+          _id: { $ne: excludeAppointmentId },
+          status: { $in: activeStatuses },
+        }
+      : { status: { $in: activeStatuses } };
+
   // Vérifier si le créneau exact est déjà pris
   const existing = await this.findOne({
+    ...baseQuery,
     date: new Date(date),
     heure: heure,
-    status: { $in: ["pending", "confirmed", "completed"] },
   });
   
   if (existing) {
@@ -182,11 +202,11 @@ appointmentSchema.statics.isTimeSlotAvailable = async function (date, heure, ser
   const endOfDay = new Date(dateObj.setHours(23, 59, 59, 999));
   
   const reservedAppointments = await this.find({
+    ...baseQuery,
     date: {
       $gte: startOfDay,
       $lte: endOfDay,
     },
-    status: { $in: ["pending", "confirmed", "completed"] },
   }).select("heure service");
   
   // Calculer les créneaux bloqués par notre nouveau rendez-vous

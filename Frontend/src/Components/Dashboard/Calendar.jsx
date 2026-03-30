@@ -7,7 +7,35 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   CheckCircleIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
+
+const ALL_CAL_SLOTS = ["09:00", "11:00", "14:00", "16:00", "18:00"];
+const CAL_MORNING = ["09:00", "11:00"];
+const CAL_AFTERNOON = ["14:00", "16:00", "18:00"];
+
+function getBlockedSlotsForCalendarDay(year, month, day, closuresList) {
+  const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+    day
+  ).padStart(2, "0")}`;
+  const blocked = new Set();
+  closuresList.forEach((c) => {
+    if (dateStr >= c.startDate && dateStr <= c.endDate) {
+      const scope = c.timeScope || "full";
+      if (scope === "morning")
+        CAL_MORNING.forEach((t) => blocked.add(t));
+      else if (scope === "afternoon")
+        CAL_AFTERNOON.forEach((t) => blocked.add(t));
+      else if (scope === "custom" && Array.isArray(c.blockedSlots))
+        c.blockedSlots
+          .filter((t) => ALL_CAL_SLOTS.includes(t))
+          .forEach((t) => blocked.add(t));
+      else if (scope === "full")
+        ALL_CAL_SLOTS.forEach((t) => blocked.add(t));
+    }
+  });
+  return blocked;
+}
 
 function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -19,16 +47,6 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
   const lastDay = new Date(year, month + 1, 0);
   const daysInMonth = lastDay.getDate();
   const startingDayOfWeek = firstDay.getDay();
-
-  // Vérifier si un jour est en période de fermeture (congés)
-  const isDayClosed = (day) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return closures.some((c) => {
-      const start = c.startDate;
-      const end = c.endDate;
-      return dateStr >= start && dateStr <= end;
-    });
-  };
 
   // Formater les rendez-vous par date
   const appointmentsByDate = {};
@@ -169,14 +187,37 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
 
             const dayAppointments = getAppointmentsForDate(day);
             const today = isToday(day);
-            const closed = isDayClosed(day);
+            const blockedSlots = getBlockedSlotsForCalendarDay(
+              year,
+              month,
+              day,
+              closures
+            );
+            const allDayBlocked = ALL_CAL_SLOTS.every((t) =>
+              blockedSlots.has(t)
+            );
+            const partialBlocked =
+              blockedSlots.size > 0 && !allDayBlocked;
+            let closureBadge = null;
+            if (allDayBlocked) closureBadge = "Fermé";
+            else if (partialBlocked) {
+              const mTaken = CAL_MORNING.every((t) => blockedSlots.has(t));
+              const aTaken = CAL_AFTERNOON.every((t) =>
+                blockedSlots.has(t)
+              );
+              if (mTaken && !aTaken) closureBadge = "Matin";
+              else if (aTaken && !mTaken) closureBadge = "Ap.-midi";
+              else closureBadge = "Partiel";
+            }
 
             return (
               <div
                 key={day}
                 className={`min-h-32 p-2 rounded-lg border-2 transition-all ${
-                  closed
+                  allDayBlocked
                     ? "bg-gray-200 border-gray-300 opacity-80"
+                    : partialBlocked
+                    ? "bg-amber-50/80 border-amber-200"
                     : today
                     ? "bg-[#f0cfcf]/20 border-[#8b6f6f]"
                     : "bg-gray-50 border-gray-200 hover:border-[#f0cfcf]"
@@ -185,14 +226,24 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
                 <div className="flex items-center justify-between mb-1">
                   <span
                     className={`text-sm font-bold ${
-                      closed ? "text-gray-500" : today ? "text-[#8b6f6f]" : "text-gray-700"
+                      allDayBlocked || partialBlocked
+                        ? "text-gray-600"
+                        : today
+                        ? "text-[#8b6f6f]"
+                        : "text-gray-700"
                     }`}
                   >
                     {day}
                   </span>
-                  {closed && (
-                    <span className="text-[10px] font-semibold text-gray-500 bg-gray-300 px-1.5 py-0.5 rounded">
-                      Fermé
+                  {closureBadge && (
+                    <span
+                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                        allDayBlocked
+                          ? "text-gray-600 bg-gray-300"
+                          : "text-amber-900 bg-amber-200"
+                      }`}
+                    >
+                      {closureBadge}
                     </span>
                   )}
                 </div>
@@ -200,8 +251,18 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
                   {dayAppointments.map((apt) => (
                     <div
                       key={apt._id}
-                      className="bg-[#8b6f6f] text-white text-xs p-1.5 rounded cursor-pointer hover:bg-[#7a5f5f] transition-colors relative"
-                      title={`${apt.prenom} ${apt.nom} - ${apt.heure} - ${apt.service}${apt.status === "completed" ? " - Effectué" : ""}`}
+                      className={`text-white text-xs p-1.5 rounded cursor-pointer transition-colors relative ${
+                        apt.status === "cancelled"
+                          ? "bg-gray-500 hover:bg-gray-600 opacity-90"
+                          : "bg-[#8b6f6f] hover:bg-[#7a5f5f]"
+                      }`}
+                      title={`${apt.prenom} ${apt.nom} - ${apt.heure} - ${apt.service}${
+                        apt.status === "completed"
+                          ? " - Effectué"
+                          : apt.status === "cancelled"
+                          ? " - Annulé"
+                          : ""
+                      }`}
                       onClick={() =>
                         onAppointmentClick && onAppointmentClick(apt)
                       }
@@ -210,6 +271,9 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
                         {apt.heure} - {apt.prenom}
                         {apt.status === "completed" && (
                           <CheckCircleIcon className="w-3.5 h-3.5 text-green-300 flex-shrink-0" title="Séance effectuée" />
+                        )}
+                        {apt.status === "cancelled" && (
+                          <XCircleIcon className="w-3.5 h-3.5 text-rose-200 flex-shrink-0" title="Rendez-vous annulé" />
                         )}
                       </div>
                     </div>

@@ -91,13 +91,18 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
           }
           setIsDateClosed(false);
 
+          const closureBlockedSet = new Set(result.closureBlockedTimes || []);
+
           const allBlockedSlots = new Set();
           result.reservedAppointments.forEach((apt) => {
             const blocked = getBlockedSlots(apt.heure, apt.service);
             blocked.forEach((slot) => allBlockedSlots.add(slot));
           });
 
-          let filtered = allTimes.filter((time) => !allBlockedSlots.has(time));
+          let filtered = allTimes.filter(
+            (time) =>
+              !closureBlockedSet.has(time) && !allBlockedSlots.has(time),
+          );
 
           filtered = filtered.filter((time) => {
             const wouldBlock = getBlockedSlots(time, formData.service);
@@ -416,7 +421,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
                       <div className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl bg-amber-50">
                         <p className="text-amber-800 text-sm font-semibold">
                           {isDateClosed
-                            ? "Le salon est fermé à cette date (congés ou fermeture). Choisissez un autre jour."
+                            ? "Le salon est fermé."
                             : "Aucun créneau disponible pour cette date"}
                         </p>
                       </div>

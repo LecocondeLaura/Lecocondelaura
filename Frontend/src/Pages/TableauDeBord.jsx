@@ -135,6 +135,7 @@ function TableauDeBord() {
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
 
   const [revenue, setRevenue] = useState({ week: null, month: null });
+  const [combinedRevenue, setCombinedRevenue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -146,6 +147,7 @@ function TableauDeBord() {
     }
     setLoading(true);
     setError(null);
+    setCombinedRevenue(null);
     const params = new URLSearchParams({
       weekYear: String(selectedWeekYear),
       week: String(selectedWeek),
@@ -203,6 +205,8 @@ function TableauDeBord() {
   const [weekStart, weekEnd] = getWeekRange(selectedWeekYear, selectedWeek);
   const weekLabel = formatWeekLabel(weekStart, weekEnd);
   const monthLabel = formatMonthLabel(selectedMonthYear, selectedMonth);
+  const massageMonthRevenue = revenue.massageMonth ?? revenue.month ?? 0;
+  const giftCardsMonthRevenue = revenue.giftCardsMonth ?? 0;
 
   return (
     <DashboardLayout>
@@ -243,70 +247,108 @@ function TableauDeBord() {
               {error}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* CA Semaine */}
-              <div className="rounded-2xl bg-white border border-[#f0cfcf]/60 shadow-sm p-5 transition-all duration-300 hover:shadow-md hover:border-[#f0cfcf]">
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#f0cfcf]/40 text-[#8b6f6f] flex-shrink-0">
-                    <CalendarIcon className="w-5 h-5" />
-                  </span>
-                  <div className="flex items-center gap-1 flex-1 min-w-0 justify-end">
-                    <button
-                      type="button"
-                      onClick={goPrevWeek}
-                      className="p-1.5 rounded-lg text-[#8b6f6f] hover:bg-[#f0cfcf]/30 transition-colors"
-                      aria-label="Semaine précédente"
-                    >
-                      <ChevronLeftIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={goNextWeek}
-                      className="p-1.5 rounded-lg text-[#8b6f6f] hover:bg-[#f0cfcf]/30 transition-colors"
-                      aria-label="Semaine suivante"
-                    >
-                      <ChevronRightIcon className="w-5 h-5" />
-                    </button>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* CA Semaine */}
+                <div className="rounded-2xl bg-white border border-[#f0cfcf]/60 shadow-sm p-5 transition-all duration-300 hover:shadow-md hover:border-[#f0cfcf]">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#f0cfcf]/40 text-[#8b6f6f] flex-shrink-0">
+                      <CalendarIcon className="w-5 h-5" />
+                    </span>
+                    <div className="flex items-center gap-1 flex-1 min-w-0 justify-end">
+                      <button
+                        type="button"
+                        onClick={goPrevWeek}
+                        className="p-1.5 rounded-lg text-[#8b6f6f] hover:bg-[#f0cfcf]/30 transition-colors"
+                        aria-label="Semaine précédente"
+                      >
+                        <ChevronLeftIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goNextWeek}
+                        className="p-1.5 rounded-lg text-[#8b6f6f] hover:bg-[#f0cfcf]/30 transition-colors"
+                        aria-label="Semaine suivante"
+                      >
+                        <ChevronRightIcon className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide truncate" title={weekLabel}>
+                    {weekLabel}
+                  </p>
+                  <p className="text-2xl md:text-3xl font-black text-[#8b6f6f] mt-1">
+                    {formatEuro(revenue.week)}
+                  </p>
                 </div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide truncate" title={weekLabel}>
-                  {weekLabel}
-                </p>
-                <p className="text-2xl md:text-3xl font-black text-[#8b6f6f] mt-1">
-                  {formatEuro(revenue.week)}
-                </p>
+                {/* CA Mois */}
+                <div className="rounded-2xl bg-white border border-[#f0cfcf]/60 shadow-sm p-5 transition-all duration-300 hover:shadow-md hover:border-[#f0cfcf]">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#f0cfcf]/40 text-[#8b6f6f] flex-shrink-0">
+                      <CalendarDaysIcon className="w-5 h-5" />
+                    </span>
+                    <div className="flex items-center gap-1 flex-1 min-w-0 justify-end">
+                      <button
+                        type="button"
+                        onClick={goPrevMonth}
+                        className="p-1.5 rounded-lg text-[#8b6f6f] hover:bg-[#f0cfcf]/30 transition-colors"
+                        aria-label="Mois précédent"
+                      >
+                        <ChevronLeftIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goNextMonth}
+                        className="p-1.5 rounded-lg text-[#8b6f6f] hover:bg-[#f0cfcf]/30 transition-colors"
+                        aria-label="Mois suivant"
+                      >
+                        <ChevronRightIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs font-semibold text-gray-500 tracking-wide capitalize">
+                    {monthLabel}
+                  </p>
+                  <p className="text-2xl md:text-3xl font-black text-[#8b6f6f] mt-1">
+                    {formatEuro(revenue.month)}
+                  </p>
+                </div>
               </div>
-              {/* CA Mois */}
-              <div className="rounded-2xl bg-white border border-[#f0cfcf]/60 shadow-sm p-5 transition-all duration-300 hover:shadow-md hover:border-[#f0cfcf]">
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#f0cfcf]/40 text-[#8b6f6f] flex-shrink-0">
-                    <CalendarDaysIcon className="w-5 h-5" />
-                  </span>
-                  <div className="flex items-center gap-1 flex-1 min-w-0 justify-end">
-                    <button
-                      type="button"
-                      onClick={goPrevMonth}
-                      className="p-1.5 rounded-lg text-[#8b6f6f] hover:bg-[#f0cfcf]/30 transition-colors"
-                      aria-label="Mois précédent"
-                    >
-                      <ChevronLeftIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={goNextMonth}
-                      className="p-1.5 rounded-lg text-[#8b6f6f] hover:bg-[#f0cfcf]/30 transition-colors"
-                      aria-label="Mois suivant"
-                    >
-                      <ChevronRightIcon className="w-5 h-5" />
-                    </button>
-                  </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="rounded-2xl bg-white border border-[#f0cfcf]/60 shadow-sm p-5">
+                  <p className="text-xs font-semibold text-gray-500 tracking-wide uppercase">
+                    CA Massages (mois)
+                  </p>
+                  <p className="text-2xl font-black text-[#8b6f6f] mt-2">
+                    {formatEuro(massageMonthRevenue)}
+                  </p>
                 </div>
-                <p className="text-xs font-semibold text-gray-500 tracking-wide capitalize">
-                  {monthLabel}
-                </p>
-                <p className="text-2xl md:text-3xl font-black text-[#8b6f6f] mt-1">
-                  {formatEuro(revenue.month)}
-                </p>
+                <div className="rounded-2xl bg-white border border-[#f0cfcf]/60 shadow-sm p-5">
+                  <p className="text-xs font-semibold text-gray-500 tracking-wide uppercase">
+                    CA Cartes cadeaux (mois)
+                  </p>
+                  <p className="text-2xl font-black text-[#8b6f6f] mt-2">
+                    {formatEuro(giftCardsMonthRevenue)}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white border border-[#f0cfcf]/60 shadow-sm p-5 flex flex-col justify-between">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCombinedRevenue(massageMonthRevenue + giftCardsMonthRevenue)
+                    }
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#8b6f6f] text-white font-semibold hover:bg-[#7a5f5f] transition-colors"
+                  >
+                    Calculer les deux
+                  </button>
+                  <p className="text-xs font-semibold text-gray-500 tracking-wide uppercase mt-4">
+                    Total calculé (mois)
+                  </p>
+                  <p className="text-2xl font-black text-[#8b6f6f] mt-1">
+                    {combinedRevenue == null ? "—" : formatEuro(combinedRevenue)}
+                  </p>
+                </div>
               </div>
             </div>
           )}

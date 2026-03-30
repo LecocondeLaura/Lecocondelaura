@@ -225,10 +225,89 @@ function Agenda() {
     }
   };
 
+  const handleUpdateCodeCarteCadeau = async (appointmentId, codeCarteCadeau) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_BASE_URL}/appointments/${appointmentId}/paiement`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            codeCarteCadeau: codeCarteCadeau || null,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        showSuccess("Code carte cadeau mis à jour");
+        if (selectedAppointment && selectedAppointment._id === appointmentId) {
+          setSelectedAppointment({
+            ...selectedAppointment,
+            codeCarteCadeau: data.data.codeCarteCadeau ?? null,
+          });
+        }
+        setAppointments((prev) =>
+          prev.map((apt) =>
+            apt._id === appointmentId
+              ? {
+                  ...apt,
+                  codeCarteCadeau: data.data.codeCarteCadeau ?? null,
+                }
+              : apt
+          )
+        );
+      } else {
+        showError(data.message || "Erreur lors de la mise à jour du code");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du code carte cadeau:", error);
+      showError("Erreur lors de la mise à jour du code");
+    }
+  };
+
   const handleCreateSuccess = () => {
     showSuccess("Rendez-vous créé avec succès !");
     loadAppointments();
     refreshNotifications();
+  };
+
+  const handleRescheduleAppointment = async (appointmentId, date, heure) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_BASE_URL}/appointments/${appointmentId}/reschedule`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ date, heure }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        showSuccess("Rendez-vous reprogrammé");
+        setAppointments((prev) =>
+          prev.map((apt) => (apt._id === appointmentId ? data.data : apt))
+        );
+        if (selectedAppointment && selectedAppointment._id === appointmentId) {
+          setSelectedAppointment(data.data);
+        }
+        refreshNotifications();
+      } else {
+        showError(data.message || "Erreur lors de la reprogrammation");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la reprogrammation:", error);
+      showError("Erreur lors de la reprogrammation");
+    }
   };
 
   return (
@@ -241,6 +320,8 @@ function Agenda() {
           onSendFollowUp={handleSendFollowUp}
           onUpdateStatus={handleUpdateStatus}
           onUpdateMoyenPaiement={handleUpdateMoyenPaiement}
+          onUpdateCodeCarteCadeau={handleUpdateCodeCarteCadeau}
+          onReschedule={handleRescheduleAppointment}
         />
       )}
       <CreateAppointmentModal

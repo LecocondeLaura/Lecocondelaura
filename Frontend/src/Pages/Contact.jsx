@@ -141,6 +141,8 @@ function Contact() {
           }
           setIsDateClosed(false);
 
+          const closureBlockedSet = new Set(result.closureBlockedTimes || []);
+
           // Calculer tous les créneaux bloqués par les rendez-vous existants
           const allBlockedSlots = new Set();
           result.reservedAppointments.forEach((apt) => {
@@ -148,8 +150,11 @@ function Contact() {
             blocked.forEach((slot) => allBlockedSlots.add(slot));
           });
 
-          // Filtrer les créneaux disponibles en excluant ceux qui sont bloqués
-          let filtered = allTimes.filter((time) => !allBlockedSlots.has(time));
+          // Filtrer les créneaux disponibles en excluant congés / indisponibilités et RDV
+          let filtered = allTimes.filter(
+            (time) =>
+              !closureBlockedSet.has(time) && !allBlockedSlots.has(time),
+          );
 
           // Pour chaque créneau disponible, vérifier s'il serait bloqué par le service sélectionné
           // (on ne peut pas prendre un créneau si notre soin bloquerait un autre créneau déjà réservé)
@@ -232,6 +237,15 @@ function Contact() {
         }
         // Vérifier que le créneau est toujours disponible
         const result = await getAvailableTimesForDate(formData.date, allTimes);
+
+        const closureBlockedSet = new Set(result.closureBlockedTimes || []);
+        if (closureBlockedSet.has(formData.heure)) {
+          alert(
+            "Ce créneau n'est pas disponible. Veuillez choisir un autre horaire.",
+          );
+          setIsLoading(false);
+          return;
+        }
 
         // Calculer tous les créneaux bloqués par les rendez-vous existants
         const allBlockedSlots = new Set();
@@ -419,17 +433,34 @@ function Contact() {
                         <span className="text-lg" aria-hidden>
                           📅
                         </span>
-                        Le salon sera fermé
+                        Le salon est fermé
                       </p>
                       <ul className="text-amber-700 text-sm space-y-1">
-                        {upcomingClosures.map((c, i) => (
-                          <li key={i}>
-                            {c.startDate === c.endDate
-                              ? `Le ${formatClosureDate(c.startDate)}`
-                              : `Du ${formatClosureDate(c.startDate)} au ${formatClosureDate(c.endDate)}`}
-                            {c.label ? ` — ${c.label}` : ""}
-                          </li>
-                        ))}
+                        {upcomingClosures.map((c, i) => {
+                          const scopeSuffix =
+                            c.timeScope === "morning"
+                              ? " — matinée"
+                              : c.timeScope === "afternoon"
+                                ? " — après-midi"
+                                : c.timeScope === "custom" &&
+                                    c.blockedSlots?.length
+                                  ? ` — ${c.blockedSlots
+                                      .map((t) => {
+                                        const [h, m] = t.split(":");
+                                        return `${parseInt(h, 10)}h${m}`;
+                                      })
+                                      .join(", ")}`
+                                  : "";
+                          return (
+                            <li key={i}>
+                              {c.startDate === c.endDate
+                                ? `Le ${formatClosureDate(c.startDate)}`
+                                : `Du ${formatClosureDate(c.startDate)} au ${formatClosureDate(c.endDate)}`}
+                              {scopeSuffix}
+                              {c.label ? ` — ${c.label}` : ""}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   )}
@@ -620,7 +651,7 @@ function Contact() {
                               <div className="w-full px-5 py-4 border-2 border-amber-200 rounded-xl bg-amber-50">
                                 <p className="text-amber-800 text-sm font-semibold">
                                   {isDateClosed
-                                    ? "Le salon est fermé à cette date (congés ou fermeture). Choisissez un autre jour."
+                                    ? "Le salon est fermé."
                                     : "Aucun créneau disponible pour cette date"}
                                 </p>
                               </div>

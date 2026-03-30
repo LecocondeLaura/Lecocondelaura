@@ -8,6 +8,7 @@ import {
   XMarkIcon,
   CheckIcon,
   SparklesIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import DashboardLayout from "../Components/Dashboard/DashboardLayout";
 import API_BASE_URL from "../config/api.config.js";
@@ -309,7 +310,7 @@ function Clients() {
                             )}
                             {apt.status && !apt.carteCadeaux && (
                               <span
-                                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
                                   apt.status === "completed"
                                     ? "bg-blue-100 text-blue-800"
                                     : apt.status === "cancelled"
@@ -317,6 +318,9 @@ function Clients() {
                                     : "bg-gray-200 text-gray-700"
                                 }`}
                               >
+                                {apt.status === "cancelled" && (
+                                  <XCircleIcon className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                                )}
                                 {apt.status === "completed"
                                   ? "Effectué"
                                   : apt.status === "cancelled"

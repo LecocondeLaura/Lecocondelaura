@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   XMarkIcon,
   ClockIcon,
+  CalendarIcon,
   UserIcon,
   PhoneIcon,
   EnvelopeIcon,
@@ -11,7 +12,30 @@ import {
   ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/outline";
 
-function AppointmentModal({ appointment, onClose, onDelete, onSendFollowUp, onUpdateStatus, onUpdateMoyenPaiement }) {
+function AppointmentModal({
+  appointment,
+  onClose,
+  onDelete,
+  onSendFollowUp,
+  onUpdateStatus,
+  onUpdateMoyenPaiement,
+  onUpdateCodeCarteCadeau,
+  onReschedule,
+}) {
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [giftCardCode, setGiftCardCode] = useState("");
+  const allTimes = ["09:00", "11:00", "14:00", "16:00", "18:00"];
+
+  useEffect(() => {
+    if (!appointment?.date) return;
+    setRescheduleDate(new Date(appointment.date).toISOString().split("T")[0]);
+    setRescheduleTime(appointment.heure || "");
+  }, [appointment?._id, appointment?.date, appointment?.heure]);
+  useEffect(() => {
+    setGiftCardCode(appointment?.codeCarteCadeau || "");
+  }, [appointment?._id, appointment?.codeCarteCadeau]);
   if (!appointment) return null;
 
   // Vérifier si le rendez-vous a eu lieu il y a au moins 1 jour
@@ -125,10 +149,10 @@ function AppointmentModal({ appointment, onClose, onDelete, onSendFollowUp, onUp
                 <span className="font-semibold">Heure :</span>{" "}
                 {appointment.heure}
               </p>
-              <p>
+              <p className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold">Statut :</span>{" "}
                 <span
-                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
                     appointment.status === "completed"
                       ? "bg-blue-100 text-blue-800"
                       : appointment.status === "confirmed"
@@ -138,6 +162,9 @@ function AppointmentModal({ appointment, onClose, onDelete, onSendFollowUp, onUp
                       : "bg-yellow-100 text-yellow-800"
                   }`}
                 >
+                  {appointment.status === "cancelled" && (
+                    <XCircleIcon className="w-4 h-4 shrink-0" aria-hidden />
+                  )}
                   {appointment.status === "completed"
                     ? "Effectué"
                     : appointment.status === "confirmed"
@@ -148,38 +175,67 @@ function AppointmentModal({ appointment, onClose, onDelete, onSendFollowUp, onUp
                 </span>
               </p>
               {!appointment.carteCadeaux && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">Paiement :</span>
-                  {onUpdateMoyenPaiement ? (
-                    <select
-                      value={appointment.moyenPaiement || ""}
-                      onChange={(e) => {
-                        const value = e.target.value || null;
-                        onUpdateMoyenPaiement(appointment._id, value);
-                      }}
-                      className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 focus:ring-2 focus:ring-[#f0cfcf] focus:border-[#f0cfcf]"
-                    >
-                      <option value="">—</option>
-                      <option value="especes">Espèces</option>
-                      <option value="cheque">Chèque</option>
-                      <option value="virement">Virement</option>
-                    </select>
-                  ) : (
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        appointment.moyenPaiement
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {appointment.moyenPaiement === "especes"
-                        ? "Espèces"
-                        : appointment.moyenPaiement === "cheque"
-                        ? "Chèque"
-                        : appointment.moyenPaiement === "virement"
-                        ? "Virement"
-                        : "—"}
-                    </span>
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold">Paiement :</span>
+                    {onUpdateMoyenPaiement ? (
+                      <select
+                        value={appointment.moyenPaiement || ""}
+                        onChange={(e) => {
+                          const value = e.target.value || null;
+                          onUpdateMoyenPaiement(appointment._id, value);
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 focus:ring-2 focus:ring-[#f0cfcf] focus:border-[#f0cfcf]"
+                      >
+                        <option value="">—</option>
+                        <option value="especes">Espèces</option>
+                        <option value="cheque">Chèque</option>
+                        <option value="virement">Virement</option>
+                        <option value="carte_cadeaux">Carte cadeau</option>
+                      </select>
+                    ) : (
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          appointment.moyenPaiement
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {appointment.moyenPaiement === "especes"
+                          ? "Espèces"
+                          : appointment.moyenPaiement === "cheque"
+                          ? "Chèque"
+                          : appointment.moyenPaiement === "virement"
+                          ? "Virement"
+                          : appointment.moyenPaiement === "carte_cadeaux"
+                          ? "Carte cadeau"
+                          : "—"}
+                      </span>
+                    )}
+                  </div>
+                  {appointment.moyenPaiement === "carte_cadeaux" && (
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-semibold text-gray-700">
+                        N° carte cadeau
+                      </label>
+                      <input
+                        type="text"
+                        value={giftCardCode}
+                        onChange={(e) => setGiftCardCode(e.target.value)}
+                        onBlur={() =>
+                          onUpdateCodeCarteCadeau &&
+                          onUpdateCodeCarteCadeau(
+                            appointment._id,
+                            giftCardCode.trim() || null
+                          )
+                        }
+                        placeholder="Ex : CC-ABC123"
+                        className="w-full max-w-xs px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 font-mono focus:ring-2 focus:ring-[#f0cfcf] focus:border-[#f0cfcf]"
+                      />
+                      <span className="text-xs text-gray-500">
+                        Modifiez puis cliquez ailleurs pour enregistrer.
+                      </span>
+                    </div>
                   )}
                 </div>
               )}
@@ -223,6 +279,67 @@ function AppointmentModal({ appointment, onClose, onDelete, onSendFollowUp, onUp
               </p>
             </div>
           )}
+
+          {/* Reprogrammation */}
+          {onReschedule &&
+            !appointment.carteCadeaux &&
+            appointment.status !== "cancelled" &&
+            appointment.status !== "completed" && (
+              <div className="bg-[#fcebeb] rounded-xl p-5">
+                <h4 className="font-bold text-[#8b6f6f] mb-4 text-lg flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5" />
+                  Reprogrammer le rendez-vous
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Nouvelle date
+                    </label>
+                    <input
+                      type="date"
+                      value={rescheduleDate}
+                      onChange={(e) => setRescheduleDate(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0cfcf] focus:border-[#f0cfcf] outline-none transition-all bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Nouvelle heure
+                    </label>
+                    <select
+                      value={rescheduleTime}
+                      onChange={(e) => setRescheduleTime(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0cfcf] focus:border-[#f0cfcf] outline-none transition-all bg-white"
+                    >
+                      <option value="">Choisir une heure</option>
+                      {allTimes.map((time) => (
+                        <option key={time} value={time}>
+                          {time}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={async () => {
+                      if (!rescheduleDate || !rescheduleTime) return;
+                      setIsRescheduling(true);
+                      await onReschedule(
+                        appointment._id,
+                        rescheduleDate,
+                        rescheduleTime
+                      );
+                      setIsRescheduling(false);
+                    }}
+                    disabled={!rescheduleDate || !rescheduleTime || isRescheduling}
+                    className="px-5 py-2.5 bg-[#8b6f6f] text-white rounded-xl font-semibold hover:bg-[#7a5f5f] disabled:opacity-50 transition-colors"
+                  >
+                    {isRescheduling ? "Reprogrammation…" : "Reprogrammer"}
+                  </button>
+                </div>
+              </div>
+            )}
 
           {/* Boutons d'action */}
           <div className="flex justify-end gap-3 flex-wrap">

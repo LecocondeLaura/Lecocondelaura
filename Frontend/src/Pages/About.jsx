@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
+import lauraPhoto from "../assets/Laura.jpg";
 
 function About() {
+  const [lauraPhotoFailed, setLauraPhotoFailed] = useState(false);
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fef5f5] via-white to-[#fef5f5] pt-24 pb-20 px-4 sm:px-6 lg:px-8 mt-10">
       <div className="max-w-6xl mx-auto">
@@ -48,6 +50,56 @@ function About() {
             </div>
           </div>
         </div>
+
+        {/* Photo de Laura — portrait, cadre type « galerie » */}
+        <section className="mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 items-center">
+            <div className="flex justify-center order-2 md:order-1">
+              <figure className="relative w-full max-w-[280px] sm:max-w-[320px] md:max-w-[380px]">
+                {/* Halo doux derrière le cadre */}
+                <div
+                  className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-[#f0cfcf]/45 via-white/80 to-[#e8d4d4]/50 blur-md"
+                  aria-hidden
+                />
+                <div className="relative rounded-[1.35rem] bg-gradient-to-br from-white via-[#fffdfd] to-[#fef5f5] p-3 shadow-[0_25px_50px_-12px_rgba(139,111,111,0.35)] ring-1 ring-[#8b6f6f]/10">
+                  <div className="aspect-[3/4] w-full overflow-hidden rounded-xl bg-[#f3e8e8]">
+                    {!lauraPhotoFailed ? (
+                      <img
+                        src={lauraPhoto}
+                        alt="Laura - Votre praticienne Head Spa"
+                        width={1440}
+                        height={1920}
+                        decoding="async"
+                        loading="lazy"
+                        className="h-full w-full object-cover object-[center_22%]"
+                        onError={() => setLauraPhotoFailed(true)}
+                      />
+                    ) : (
+                      <div className="flex h-full min-h-[18rem] flex-col items-center justify-center gap-2 px-6 text-center text-[#8b6f6f]/70">
+                        <span className="text-4xl" aria-hidden>
+                          🌸
+                        </span>
+                        <p className="text-sm font-medium">
+                          Photo à venir — merci de recharger la page si le
+                          problème persiste.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </figure>
+            </div>
+            <div className="order-1 md:order-2 text-center md:text-left">
+              <h2 className="text-3xl sm:text-4xl font-black text-[#8b6f6f] mb-4">
+                Ohayō, moi c&apos;est Laura <span aria-hidden>👋</span>
+              </h2>
+              <p className="text-lg text-gray-600 leading-relaxed mb-2">
+              J'ai 24ans, infirmère de métier et particienne Head Spa.
+              J'ai décidé d'apporter du bien-être aux gens d'une autre façon que par le paramédical.
+              </p>
+            </div>
+          </div>
+        </section>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-[#f0cfcf]/50 group">

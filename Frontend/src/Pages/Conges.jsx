@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   CalendarDaysIcon,
   PlusIcon,
+  PencilSquareIcon,
   TrashIcon,
   XMarkIcon,
   SunIcon,
@@ -10,17 +11,46 @@ import API_BASE_URL from "../config/api.config.js";
 import DashboardLayout from "../Components/Dashboard/DashboardLayout";
 import { useToast } from "../contexts/ToastContext";
 
+const PICKABLE_SLOTS = [
+  { value: "09:00", label: "9h00" },
+  { value: "11:00", label: "11h00" },
+  { value: "14:00", label: "14h00" },
+  { value: "16:00", label: "16h00" },
+  { value: "18:00", label: "18h00" },
+];
+
 function Conges() {
   const [closures, setClosures] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingClosureId, setEditingClosureId] = useState(null);
   const [formData, setFormData] = useState({
     startDate: "",
     endDate: "",
     label: "",
+    visibleToClients: true,
+    timeScope: "full",
+    blockedSlots: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showSuccess, showError } = useToast();
+
+  const resetForm = () => {
+    setFormData({
+      startDate: "",
+      endDate: "",
+      label: "",
+      visibleToClients: true,
+      timeScope: "full",
+      blockedSlots: [],
+    });
+    setEditingClosureId(null);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setIsFormOpen(true);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -80,29 +110,52 @@ function Conges() {
       showError("La date de fin doit être après la date de début");
       return;
     }
+    if (
+      formData.timeScope === "custom" &&
+      (!formData.blockedSlots || formData.blockedSlots.length === 0)
+    ) {
+      showError("Cochez au moins un créneau à retirer du formulaire.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/closures`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          startDate: formData.startDate,
-          endDate: end,
-          label: formData.label.trim(),
-        }),
-      });
+      const isEdit = Boolean(editingClosureId);
+      const response = await fetch(
+        isEdit
+          ? `${API_BASE_URL}/closures/${editingClosureId}`
+          : `${API_BASE_URL}/closures`,
+        {
+          method: isEdit ? "PATCH" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            startDate: formData.startDate,
+            endDate: end,
+            label: formData.label.trim(),
+            visibleToClients: formData.visibleToClients,
+            timeScope: formData.timeScope,
+            blockedSlots:
+              formData.timeScope === "custom"
+                ? formData.blockedSlots
+                : undefined,
+          }),
+        }
+      );
       const data = await response.json();
 
       if (data.success) {
         showSuccess(
-          "Période enregistrée : les clients ne pourront pas réserver ces jours."
+          isEdit
+            ? "Période modifiée avec succès."
+            : formData.visibleToClients
+            ? "Période enregistrée : message aux clients sur la page contact et créneaux bloqués."
+            : "Indisponibilité enregistrée : créneaux retirés du formulaire, sans affichage congés pour les clients."
         );
-        setFormData({ startDate: "", endDate: "", label: "" });
+        resetForm();
         setIsFormOpen(false);
         loadClosures();
       } else {
@@ -114,6 +167,20 @@ function Conges() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEdit = (closure) => {
+    setEditingClosureId(closure._id);
+    setFormData({
+      startDate: closure.startDate || "",
+      endDate: closure.endDate || closure.startDate || "",
+      label: closure.label || "",
+      visibleToClients: closure.visibleToClients !== false,
+      timeScope: closure.timeScope || "full",
+      blockedSlots:
+        closure.timeScope === "custom" ? closure.blockedSlots || [] : [],
+    });
+    setIsFormOpen(true);
   };
 
   const handleDelete = async (id) => {
@@ -159,6 +226,33 @@ function Conges() {
     return Math.round((b - a) / (1000 * 60 * 60 * 24)) + 1;
   };
 
+  const scopeLabel = (scope, slots = []) => {
+    if (scope === "morning") return "Matinée";
+    if (scope === "afternoon") return "Après-midi";
+    if (scope === "custom" && slots.length) {
+      const order = PICKABLE_SLOTS.map((s) => s.value);
+      const sorted = [...slots].sort(
+        (a, b) => order.indexOf(a) - order.indexOf(b)
+      );
+      const labels = sorted.map(
+        (v) => PICKABLE_SLOTS.find((s) => s.value === v)?.label || v
+      );
+      return `Créneaux : ${labels.join(", ")}`;
+    }
+    if (scope === "custom") return "Créneaux au choix";
+    return "Journée entière";
+  };
+
+  const toggleBlockedSlot = (value) => {
+    setFormData((prev) => {
+      const has = prev.blockedSlots.includes(value);
+      const blockedSlots = has
+        ? prev.blockedSlots.filter((x) => x !== value)
+        : [...prev.blockedSlots, value];
+      return { ...prev, blockedSlots };
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -175,19 +269,21 @@ function Conges() {
                   </span>
                   Congés & fermetures
                 </h1>
-                <p className="mt-3 text-white/90 text-lg max-w-xl">
-                  Bloquez des jours ou des semaines : aucune réservation ne sera
-                  possible sur le site pendant ces périodes. Les clients voient
-                  une bannière sur la page de contact.
+                <p className="mt-3 text-white/90 text-lg max-w-2xl">
+                  Congés annoncés aux clients (bannière + créneaux fermés), ou
+                  indisponibilités discrètes (créneaux retirés sans message de
+                  fermeture). Journée, matinée, après-midi ou créneaux précis
+                  (ex. autre RDV) — les mêmes heures s&apos;appliquent à chaque
+                  jour de la plage.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setIsFormOpen(true)}
+                onClick={openCreateModal}
                 className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white text-[#8b6f6f] rounded-xl font-bold hover:bg-white/95 shadow-lg hover:shadow-xl transition-all duration-300 shrink-0"
               >
                 <PlusIcon className="w-5 h-5" />
-                Ajouter une fermeture
+                Ajouter une période
               </button>
             </div>
           </div>
@@ -200,11 +296,14 @@ function Conges() {
               <div className="bg-gradient-to-r from-[#f0cfcf] to-[#e0bfbf] p-6 flex items-center justify-between rounded-t-2xl">
                 <h2 className="text-xl font-bold text-[#8b6f6f] flex items-center gap-2">
                   <SunIcon className="w-6 h-6" />
-                  Nouvelle période
+                  {editingClosureId ? "Modifier la période" : "Nouvelle période"}
                 </h2>
                 <button
                   type="button"
-                  onClick={() => setIsFormOpen(false)}
+                  onClick={() => {
+                    setIsFormOpen(false);
+                    resetForm();
+                  }}
                   className="p-2 rounded-xl bg-white/30 hover:bg-white/50 text-[#8b6f6f] transition-colors"
                   aria-label="Fermer"
                 >
@@ -212,6 +311,125 @@ function Conges() {
                 </button>
               </div>
               <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <fieldset className="space-y-3 border-0 p-0 m-0">
+                  <legend className="block text-sm font-bold text-gray-700 mb-2">
+                    Type
+                  </legend>
+                  <label
+                    className={`flex items-start gap-3 cursor-pointer rounded-xl border-2 p-4 transition-colors ${
+                      formData.visibleToClients
+                        ? "border-[#f0cfcf] bg-[#fef5f5]"
+                        : "border-gray-200"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="closureKind"
+                      className="mt-1"
+                      checked={formData.visibleToClients}
+                      onChange={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          visibleToClients: true,
+                        }))
+                      }
+                    />
+                    <span>
+                      <span className="font-semibold text-gray-800 block">
+                        Congés / fermeture (affiché aux clients)
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        Bannière sur la page contact et créneaux non réservables.
+                      </span>
+                    </span>
+                  </label>
+                  <label
+                    className={`flex items-start gap-3 cursor-pointer rounded-xl border-2 p-4 transition-colors ${
+                      !formData.visibleToClients
+                        ? "border-[#f0cfcf] bg-[#fef5f5]"
+                        : "border-gray-200"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="closureKind"
+                      className="mt-1"
+                      checked={!formData.visibleToClients}
+                      onChange={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          visibleToClients: false,
+                        }))
+                      }
+                    />
+                    <span>
+                      <span className="font-semibold text-gray-800 block">
+                        Indisponibilité interne
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        Créneaux retirés du formulaire, sans message de congés.
+                      </span>
+                    </span>
+                  </label>
+                </fieldset>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Horaires (chaque jour de la plage)
+                  </label>
+                  <select
+                    value={formData.timeScope}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        timeScope: v,
+                        blockedSlots: v === "custom" ? prev.blockedSlots : [],
+                      }));
+                    }}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0cfcf] focus:border-[#f0cfcf] outline-none transition-all bg-white"
+                  >
+                    <option value="full">Journée entière</option>
+                    <option value="morning">
+                      Matinée uniquement (9h00, 11h00)
+                    </option>
+                    <option value="afternoon">
+                      Après-midi uniquement (14h00, 16h00, 18h00)
+                    </option>
+                    <option value="custom">
+                      Créneaux précis (choisir les heures)
+                    </option>
+                  </select>
+                  {formData.timeScope === "custom" && (
+                    <div className="mt-3 p-4 rounded-xl bg-[#fef5f5] border border-[#f0cfcf]">
+                      <p className="text-sm font-semibold text-gray-800 mb-3">
+                        À retirer du formulaire chaque jour concerné (ex. déjà
+                        pris par d&apos;autres rendez-vous) :
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        {PICKABLE_SLOTS.map(({ value, label }) => (
+                          <label
+                            key={value}
+                            className={`inline-flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${
+                              formData.blockedSlots.includes(value)
+                                ? "border-[#8b6f6f] bg-white text-[#8b6f6f]"
+                                : "border-gray-200 bg-white text-gray-600"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-[#8b6f6f] focus:ring-[#f0cfcf]"
+                              checked={formData.blockedSlots.includes(value)}
+                              onChange={() => toggleBlockedSlot(value)}
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -269,7 +487,10 @@ function Conges() {
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setIsFormOpen(false)}
+                    onClick={() => {
+                      setIsFormOpen(false);
+                      resetForm();
+                    }}
                     className="flex-1 px-5 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
                   >
                     Annuler
@@ -279,7 +500,11 @@ function Conges() {
                     disabled={isSubmitting}
                     className="flex-1 px-5 py-3 bg-[#8b6f6f] text-white rounded-xl font-semibold hover:bg-[#7a5f5f] disabled:opacity-50 transition-colors"
                   >
-                    {isSubmitting ? "Enregistrement…" : "Enregistrer"}
+                    {isSubmitting
+                      ? "Enregistrement…"
+                      : editingClosureId
+                      ? "Mettre à jour"
+                      : "Enregistrer"}
                   </button>
                 </div>
               </form>
@@ -300,20 +525,19 @@ function Conges() {
                 <CalendarDaysIcon className="w-10 h-10" />
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">
-                Aucune fermeture programmée
+                Aucune période enregistrée
               </h3>
-              <p className="text-gray-600 max-w-sm mx-auto mb-8">
-                Ajoutez un jour ou une semaine de congés pour bloquer les
-                réservations en ligne. Les clients verront ces dates sur la page
-                de contact.
+              <p className="text-gray-600 max-w-md mx-auto mb-8">
+                Ajoutez des congés, des demi-journées ou des créneaux précis
+                retirés du formulaire.
               </p>
               <button
                 type="button"
-                onClick={() => setIsFormOpen(true)}
+                onClick={openCreateModal}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#8b6f6f] text-white rounded-xl font-semibold hover:bg-[#7a5f5f] transition-colors"
               >
                 <PlusIcon className="w-5 h-5" />
-                Ajouter une fermeture
+                Ajouter une période
               </button>
             </div>
           ) : (
@@ -334,21 +558,50 @@ function Conges() {
                             {c.label}
                           </p>
                         )}
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span
+                            className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                              c.visibleToClients !== false
+                                ? "bg-amber-100 text-amber-900"
+                                : "bg-slate-200 text-slate-700"
+                            }`}
+                          >
+                            {c.visibleToClients !== false
+                              ? "Annoncé aux clients"
+                              : "Interne"}
+                          </span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#f0cfcf]/80 text-[#5c4a4a]">
+                            {scopeLabel(
+                              c.timeScope || "full",
+                              c.blockedSlots || []
+                            )}
+                          </span>
+                        </div>
                         <p className="text-xs text-[#8b6f6f] font-medium mt-2">
                           {getDaysCount(c.startDate, c.endDate)} jour
                           {getDaysCount(c.startDate, c.endDate) > 1 ? "s" : ""}{" "}
-                          bloqué
+                          concerné
                           {getDaysCount(c.startDate, c.endDate) > 1 ? "s" : ""}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(c._id)}
-                        className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors shrink-0"
-                        aria-label="Supprimer"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(c)}
+                          className="p-2.5 text-gray-400 hover:text-[#8b6f6f] hover:bg-[#fef5f5] rounded-xl transition-colors"
+                          aria-label="Modifier"
+                        >
+                          <PencilSquareIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(c._id)}
+                          className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                          aria-label="Supprimer"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="h-1 bg-gradient-to-r from-[#f0cfcf] to-[#e0bfbf] opacity-0 group-hover:opacity-100 transition-opacity" />

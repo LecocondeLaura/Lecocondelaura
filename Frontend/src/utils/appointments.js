@@ -59,6 +59,7 @@ export const getAvailableTimesForDate = async (date, allTimes) => {
         availableTimes: data.data.availableTimes || [],
         reservedAppointments: data.data.reservedAppointments || [],
         isClosed: data.data.isClosed === true,
+        closureBlockedTimes: data.data.closureBlockedTimes || [],
       };
     }
 
@@ -68,6 +69,7 @@ export const getAvailableTimesForDate = async (date, allTimes) => {
       availableTimes: allTimes,
       reservedAppointments: [],
       isClosed: false,
+      closureBlockedTimes: [],
     };
   } catch (error) {
     console.error("Erreur lors de la récupération:", error);
@@ -75,6 +77,7 @@ export const getAvailableTimesForDate = async (date, allTimes) => {
       availableTimes: allTimes,
       reservedAppointments: [],
       isClosed: false,
+      closureBlockedTimes: [],
     };
   }
 };

@@ -18,7 +18,7 @@ import {
   generateGiftCardPDFFromImage,
   getCustomGiftCardImage,
 } from "../services/giftCardService.js";
-import { isDateClosed } from "./closures.js";
+import Closure from "../models/Closure.js";
 
 const router = express.Router();
 
@@ -85,31 +85,63 @@ router.get("/stats/revenue", authenticateToken, async (req, res) => {
     const startOfMonth = new Date(year, month, 1, 0, 0, 0, 0);
     const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
-    const paidFilter = {
+    // Massages : exclure les séances réglées avec une carte cadeau (déjà comptées à la vente du bon)
+    const paidMassageFilter = {
       paiementEffectue: true,
       status: { $in: ["pending", "confirmed", "completed"] },
       carteCadeaux: false,
+      moyenPaiement: { $ne: "carte_cadeaux" },
+    };
+    const paidGiftCardFilter = {
+      paiementEffectue: true,
+      carteCadeaux: true,
     };
 
-    const [appointmentsWeek, appointmentsMonth] = await Promise.all([
+    const [
+      massageWeek,
+      massageMonth,
+      giftCardsWeek,
+      giftCardsMonth,
+    ] = await Promise.all([
       Appointment.find({
-        ...paidFilter,
+        ...paidMassageFilter,
         date: { $gte: startOfWeek, $lte: endOfWeek },
       }).select("service"),
       Appointment.find({
-        ...paidFilter,
+        ...paidMassageFilter,
         date: { $gte: startOfMonth, $lte: endOfMonth },
+      }).select("service"),
+      Appointment.find({
+        ...paidGiftCardFilter,
+        createdAt: { $gte: startOfWeek, $lte: endOfWeek },
+      }).select("service"),
+      Appointment.find({
+        ...paidGiftCardFilter,
+        createdAt: { $gte: startOfMonth, $lte: endOfMonth },
       }).select("service"),
     ]);
 
     const sumRevenue = (list) =>
       list.reduce((acc, apt) => acc + (getPriceForService(apt.service) || 0), 0);
 
+    const massageWeekRevenue = sumRevenue(massageWeek);
+    const massageMonthRevenue = sumRevenue(massageMonth);
+    const giftCardsWeekRevenue = sumRevenue(giftCardsWeek);
+    const giftCardsMonthRevenue = sumRevenue(giftCardsMonth);
+
     res.json({
       success: true,
       data: {
-        week: sumRevenue(appointmentsWeek),
-        month: sumRevenue(appointmentsMonth),
+        // Compatibilité avec l'UI existante
+        week: massageWeekRevenue,
+        month: massageMonthRevenue,
+        // Détail par catégorie
+        massageWeek: massageWeekRevenue,
+        massageMonth: massageMonthRevenue,
+        giftCardsWeek: giftCardsWeekRevenue,
+        giftCardsMonth: giftCardsMonthRevenue,
+        totalWeek: massageWeekRevenue + giftCardsWeekRevenue,
+        totalMonth: massageMonthRevenue + giftCardsMonthRevenue,
         weekStart: startOfWeek.toISOString().slice(0, 10),
         weekEnd: endOfWeek.toISOString().slice(0, 10),
         monthLabel: `${year}-${String(month + 1).padStart(2, "0")}`,
@@ -136,9 +168,11 @@ router.get("/available/:date", async (req, res) => {
       "18:00",
     ];
 
-    // Si le salon est fermé (congés/fermeture) ce jour-là : aucun créneau
-    const closed = await isDateClosed(date);
-    if (closed) {
+    const closureBlocked = await Closure.getBlockedSlotTimesForDate(date);
+    const closureBlockedTimes = [...closureBlocked];
+    const timesAfterClosures = allTimes.filter((t) => !closureBlocked.has(t));
+
+    if (timesAfterClosures.length === 0) {
       return res.json({
         success: true,
         data: {
@@ -147,6 +181,7 @@ router.get("/available/:date", async (req, res) => {
           reservedTimes: [],
           reservedAppointments: [],
           isClosed: true,
+          closureBlockedTimes,
         },
       });
     }
@@ -165,7 +200,7 @@ router.get("/available/:date", async (req, res) => {
     }).select("heure service");
 
     const reservedTimes = reservedAppointments.map((apt) => apt.heure);
-    const availableTimes = allTimes.filter(
+    const availableTimes = timesAfterClosures.filter(
       (time) => !reservedTimes.includes(time)
     );
 
@@ -177,6 +212,7 @@ router.get("/available/:date", async (req, res) => {
         reservedTimes: reservedTimes,
         reservedAppointments: reservedAppointments,
         isClosed: false,
+        closureBlockedTimes,
       },
     });
   } catch (error) {
@@ -221,13 +257,12 @@ router.post("/", async (req, res) => {
     }
 
     if (!carteCadeaux && date) {
-      // Vérifier si le salon est fermé (congés / fermeture) ce jour-là
-      const closed = await isDateClosed(date);
-      if (closed) {
+      const slotBlocked = await Closure.getBlockedSlotTimesForDate(date);
+      if (slotBlocked.has(heure)) {
         return res.status(400).json({
           success: false,
           message:
-            "Le salon est fermé à cette date. Veuillez choisir un autre jour.",
+            "Ce créneau n'est pas disponible. Veuillez choisir un autre horaire ou une autre date.",
         });
       }
 
@@ -380,23 +415,101 @@ router.patch("/:id/status", async (req, res) => {
   }
 });
 
+// PATCH - Reprogrammer un rendez-vous (date/heure, protégé)
+router.patch("/:id/reschedule", authenticateToken, async (req, res) => {
+  try {
+    const { date, heure } = req.body;
+    if (!date || !heure) {
+      return res.status(400).json({
+        success: false,
+        message: "La date et l'heure sont requises",
+      });
+    }
+
+    const appointment = await Appointment.findById(req.params.id).select("-__v");
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Rendez-vous non trouvé",
+      });
+    }
+    if (appointment.carteCadeaux) {
+      return res.status(400).json({
+        success: false,
+        message: "Impossible de reprogrammer une carte cadeau",
+      });
+    }
+    if (appointment.status === "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Impossible de reprogrammer un rendez-vous annulé",
+      });
+    }
+
+    const currentDate = appointment.date
+      ? new Date(appointment.date).toISOString().split("T")[0]
+      : null;
+    if (currentDate === date && appointment.heure === heure) {
+      return res.json({
+        success: true,
+        message: "Aucune modification",
+        data: appointment,
+      });
+    }
+
+    const isAvailable = await Appointment.isTimeSlotAvailable(
+      date,
+      heure,
+      appointment.service,
+      appointment._id
+    );
+    if (!isAvailable) {
+      return res.status(409).json({
+        success: false,
+        message: "Ce créneau n'est pas disponible",
+      });
+    }
+
+    appointment.date = new Date(date);
+    appointment.heure = heure;
+    const saved = await appointment.save();
+
+    res.json({
+      success: true,
+      message: "Rendez-vous reprogrammé avec succès",
+      data: saved,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la reprogrammation",
+      error: error.message,
+    });
+  }
+});
+
 // PATCH - Mettre à jour le paiement : moyen (espèces/chèque) et/ou paiement effectué (protégé)
 router.patch("/:id/paiement", authenticateToken, async (req, res) => {
   try {
-    const { paiementEffectue, moyenPaiement } = req.body;
+    const { paiementEffectue, moyenPaiement, codeCarteCadeau } = req.body;
     const update = {};
 
     if (moyenPaiement !== undefined) {
       if (moyenPaiement === null || moyenPaiement === "") {
         update.moyenPaiement = null;
         update.paiementEffectue = false;
-      } else if (["especes", "cheque", "virement"].includes(moyenPaiement)) {
+      } else if (
+        ["especes", "cheque", "virement", "carte_cadeaux"].includes(
+          moyenPaiement
+        )
+      ) {
         update.moyenPaiement = moyenPaiement;
         update.paiementEffectue = true;
       } else {
         return res.status(400).json({
           success: false,
-          message: "moyenPaiement doit être 'especes', 'cheque', 'virement' ou vide",
+          message:
+            "moyenPaiement doit être 'especes', 'cheque', 'virement', 'carte_cadeaux' ou vide",
         });
       }
     }
@@ -415,6 +528,19 @@ router.patch("/:id/paiement", authenticateToken, async (req, res) => {
       }
       update.paiementEffectue = paiementEffectueBool;
       if (!paiementEffectueBool) update.moyenPaiement = null;
+    }
+
+    if (codeCarteCadeau !== undefined) {
+      if (codeCarteCadeau === null || codeCarteCadeau === "") {
+        update.codeCarteCadeau = null;
+      } else if (typeof codeCarteCadeau === "string") {
+        update.codeCarteCadeau = codeCarteCadeau.trim();
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Le code de carte cadeau doit être une chaîne de caractères",
+        });
+      }
     }
 
     const appointment = await Appointment.findByIdAndUpdate(
