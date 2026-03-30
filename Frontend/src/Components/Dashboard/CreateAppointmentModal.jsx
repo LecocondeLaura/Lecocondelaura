@@ -24,6 +24,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
   const [isLoading, setIsLoading] = useState(false);
   const [availableTimes, setAvailableTimes] = useState([]);
   const [isDateClosed, setIsDateClosed] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState(false);
   const [errors, setErrors] = useState({});
 
   const services = [
@@ -82,6 +83,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
             formData.date,
             allTimes,
           );
+          setAvailabilityError(result.hasError === true);
 
           if (result.isClosed) {
             setAvailableTimes([]);
@@ -121,10 +123,12 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
           console.error("Erreur lors de la récupération des horaires:", error);
           setAvailableTimes([]);
           setIsDateClosed(false);
+          setAvailabilityError(true);
         }
       } else {
         setAvailableTimes([]);
         setIsDateClosed(false);
+        setAvailabilityError(false);
         if (!formData.service) {
           setFormData((prev) => ({ ...prev, heure: "" }));
         }
@@ -294,7 +298,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   <EnvelopeIcon className="w-4 h-4" />
                   Email *
                 </label>
@@ -315,7 +319,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   <PhoneIcon className="w-4 h-4" />
                   Téléphone *
                 </label>
@@ -374,7 +378,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4" />
                     Date *
                   </label>
@@ -422,6 +426,8 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
                         <p className="text-amber-800 text-sm font-semibold">
                           {isDateClosed
                             ? "Le salon est fermé."
+                            : availabilityError
+                              ? "Disponibilités indisponibles temporairement."
                             : "Aucun créneau disponible pour cette date"}
                         </p>
                       </div>
@@ -466,7 +472,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+                disabled={isLoading || availabilityError}
               className="px-6 py-3 bg-[#8b6f6f] text-white rounded-xl font-semibold hover:bg-[#7a5f5f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Création..." : "Créer le rendez-vous"}

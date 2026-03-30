@@ -60,24 +60,27 @@ export const getAvailableTimesForDate = async (date, allTimes) => {
         reservedAppointments: data.data.reservedAppointments || [],
         isClosed: data.data.isClosed === true,
         closureBlockedTimes: data.data.closureBlockedTimes || [],
+        hasError: false,
       };
     }
 
-    // En cas d'erreur API, retourner tous les horaires (fallback)
-    console.warn("Erreur API, utilisation de tous les horaires par défaut");
+    // Fail-safe: ne jamais ouvrir tous les créneaux si l'API échoue
+    console.warn("Erreur API disponibilité, créneaux bloqués par sécurité");
     return {
-      availableTimes: allTimes,
+      availableTimes: [],
       reservedAppointments: [],
       isClosed: false,
       closureBlockedTimes: [],
+      hasError: true,
     };
   } catch (error) {
     console.error("Erreur lors de la récupération:", error);
     return {
-      availableTimes: allTimes,
+      availableTimes: [],
       reservedAppointments: [],
       isClosed: false,
       closureBlockedTimes: [],
+      hasError: true,
     };
   }
 };

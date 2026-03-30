@@ -23,6 +23,7 @@ function Contact() {
   const [isLoading, setIsLoading] = useState(false);
   const [availableTimes, setAvailableTimes] = useState([]);
   const [isDateClosed, setIsDateClosed] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState(false);
   const [carteCadeaux, setCarteCadeaux] = useState(false);
 
   const allTimes = ["09:00", "11:00", "14:00", "16:00", "18:00"];
@@ -132,6 +133,7 @@ function Contact() {
             formData.date,
             allTimes,
           );
+          setAvailabilityError(result.hasError === true);
 
           if (result.isClosed) {
             setAvailableTimes([]);
@@ -184,10 +186,12 @@ function Contact() {
           console.error("Erreur lors de la récupération des horaires:", error);
           setAvailableTimes([]);
           setIsDateClosed(false);
+          setAvailabilityError(true);
         }
       } else {
         setAvailableTimes([]);
         setIsDateClosed(false);
+        setAvailabilityError(false);
         if (!formData.service) {
           setFormData((prev) => ({ ...prev, heure: "" }));
         }
@@ -237,6 +241,13 @@ function Contact() {
         }
         // Vérifier que le créneau est toujours disponible
         const result = await getAvailableTimesForDate(formData.date, allTimes);
+        if (result.hasError) {
+          alert(
+            "Impossible de vérifier les disponibilités pour le moment. Veuillez réessayer dans quelques instants.",
+          );
+          setIsLoading(false);
+          return;
+        }
 
         const closureBlockedSet = new Set(result.closureBlockedTimes || []);
         if (closureBlockedSet.has(formData.heure)) {
@@ -652,6 +663,8 @@ function Contact() {
                                 <p className="text-amber-800 text-sm font-semibold">
                                   {isDateClosed
                                     ? "Le salon est fermé."
+                                    : availabilityError
+                                      ? "Disponibilités indisponibles temporairement. Réessayez dans un instant."
                                     : "Aucun créneau disponible pour cette date"}
                                 </p>
                               </div>
@@ -690,6 +703,7 @@ function Contact() {
                         type="submit"
                         disabled={
                           isLoading ||
+                          availabilityError ||
                           (!carteCadeaux && !formData.heure) ||
                           (carteCadeaux && !formData.service)
                         }
