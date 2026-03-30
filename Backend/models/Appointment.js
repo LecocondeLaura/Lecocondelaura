@@ -164,6 +164,25 @@ const getBlockedSlots = (startTime, serviceName) => {
   return blockedSlots;
 };
 
+const isDateOnlyString = (value) =>
+  typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+const getUtcDayRange = (dateInput) => {
+  if (isDateOnlyString(dateInput)) {
+    return {
+      start: new Date(`${dateInput}T00:00:00.000Z`),
+      end: new Date(`${dateInput}T23:59:59.999Z`),
+    };
+  }
+
+  const dateObj = new Date(dateInput);
+  const start = new Date(dateObj);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(dateObj);
+  end.setUTCHours(23, 59, 59, 999);
+  return { start, end };
+};
+
 // Vérifier si un créneau est disponible
 appointmentSchema.statics.isTimeSlotAvailable = async function (
   date,
@@ -185,10 +204,12 @@ appointmentSchema.statics.isTimeSlotAvailable = async function (
         }
       : { status: { $in: activeStatuses } };
 
-  // Vérifier si le créneau exact est déjà pris
+  const { start: dayStart, end: dayEnd } = getUtcDayRange(date);
+
+  // Vérifier si le créneau exact est déjà pris sur la même journée
   const existing = await this.findOne({
     ...baseQuery,
-    date: new Date(date),
+    date: { $gte: dayStart, $lte: dayEnd },
     heure: heure,
   });
   
@@ -197,15 +218,11 @@ appointmentSchema.statics.isTimeSlotAvailable = async function (
   }
   
   // Récupérer tous les rendez-vous de cette date
-  const dateObj = new Date(date);
-  const startOfDay = new Date(dateObj.setHours(0, 0, 0, 0));
-  const endOfDay = new Date(dateObj.setHours(23, 59, 59, 999));
-  
   const reservedAppointments = await this.find({
     ...baseQuery,
     date: {
-      $gte: startOfDay,
-      $lte: endOfDay,
+      $gte: dayStart,
+      $lte: dayEnd,
     },
   }).select("heure service");
   

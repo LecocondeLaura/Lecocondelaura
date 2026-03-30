@@ -22,6 +22,32 @@ import Closure from "../models/Closure.js";
 
 const router = express.Router();
 
+const isDateOnlyString = (value) =>
+  typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+const getUtcDayRange = (dateInput) => {
+  if (isDateOnlyString(dateInput)) {
+    return {
+      start: new Date(`${dateInput}T00:00:00.000Z`),
+      end: new Date(`${dateInput}T23:59:59.999Z`),
+    };
+  }
+
+  const dateObj = new Date(dateInput);
+  const start = new Date(dateObj);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(dateObj);
+  end.setUTCHours(23, 59, 59, 999);
+  return { start, end };
+};
+
+const normalizeDateForStorage = (dateInput) => {
+  if (isDateOnlyString(dateInput)) {
+    return new Date(`${dateInput}T12:00:00.000Z`);
+  }
+  return new Date(dateInput);
+};
+
 // GET - Récupérer tous les rendez-vous (protégé)
 router.get("/", authenticateToken, async (req, res) => {
   try {
@@ -187,9 +213,7 @@ router.get("/available/:date", async (req, res) => {
     }
 
     // Récupérer les rendez-vous pour cette date
-    const dateObj = new Date(date);
-    const startOfDay = new Date(dateObj.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(dateObj.setHours(23, 59, 59, 999));
+    const { start: startOfDay, end: endOfDay } = getUtcDayRange(date);
 
     const reservedAppointments = await Appointment.find({
       date: {
@@ -290,7 +314,7 @@ router.post("/", async (req, res) => {
 
     // Ajouter date et heure seulement si ce n'est pas une carte cadeaux
     if (!carteCadeaux) {
-      appointmentData.date = new Date(date);
+      appointmentData.date = normalizeDateForStorage(date);
       appointmentData.heure = heure;
     }
 
@@ -470,7 +494,7 @@ router.patch("/:id/reschedule", authenticateToken, async (req, res) => {
       });
     }
 
-    appointment.date = new Date(date);
+    appointment.date = normalizeDateForStorage(date);
     appointment.heure = heure;
     const saved = await appointment.save();
 

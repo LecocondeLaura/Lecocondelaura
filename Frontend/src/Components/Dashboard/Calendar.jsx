@@ -52,11 +52,8 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
   const appointmentsByDate = {};
   appointments.forEach((apt) => {
     if (apt.date && !apt.carteCadeaux) {
-      // Normaliser la date pour éviter les problèmes de fuseau horaire
       const aptDate = new Date(apt.date);
-      const dateKey = `${aptDate.getFullYear()}-${String(
-        aptDate.getMonth() + 1
-      ).padStart(2, "0")}-${String(aptDate.getDate()).padStart(2, "0")}`;
+      const dateKey = aptDate.toISOString().slice(0, 10);
       if (!appointmentsByDate[dateKey]) {
         appointmentsByDate[dateKey] = [];
       }
@@ -128,7 +125,12 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
   const appointmentsThisMonthCount = appointments.filter((apt) => {
     if (!apt.date || apt.carteCadeaux) return false;
     const aptDate = new Date(apt.date);
-    return aptDate.getFullYear() === year && aptDate.getMonth() === month;
+    const [aptYear, aptMonth] = aptDate
+      .toISOString()
+      .slice(0, 7)
+      .split("-")
+      .map(Number);
+    return aptYear === year && aptMonth === month + 1;
   }).length;
 
   return (
