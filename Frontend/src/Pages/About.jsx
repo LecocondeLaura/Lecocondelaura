@@ -94,7 +94,7 @@ function About() {
                 Ohayō, moi c&apos;est Laura <span aria-hidden>👋</span>
               </h2>
               <p className="text-lg text-gray-600 leading-relaxed mb-2">
-              J'ai 24ans, infirmère de métier et particienne Head Spa.
+              J'ai 24ans, infirmère de métier et praticienne Head Spa.
               J'ai décidé d'apporter du bien-être aux gens d'une autre façon que par le paramédical.
               </p>
             </div>
