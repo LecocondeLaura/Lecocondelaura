@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import API_BASE_URL from "../../config/api.config.js";
 import { getAvailableTimesForDate } from "../../utils/appointments.js";
+import { BOOKING_SERVICES } from "../../Data/bookingServices.js";
 
 function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -27,17 +28,13 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
   const [availabilityError, setAvailabilityError] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const services = [
-    "Head Spa Kodomo - 60min (enfant)",
-    "Head Spa Rituel Détente - 60min",
-    "Head Spa Rituel Ultime - 90min",
-  ];
+  const services = BOOKING_SERVICES;
 
   const allTimes = ["09:00", "11:00", "14:00", "16:00", "18:00"];
 
   // Fonction pour obtenir la durée du soin en minutes
   const getServiceDuration = (serviceName) => {
-    if (serviceName.includes("45min")) return 45;
+    if (serviceName.includes("30min")) return 30;
     if (serviceName.includes("60min")) return 60;
     if (serviceName.includes("90min")) return 90;
     return 60;
@@ -56,7 +53,9 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
     const startMinutes = timeToMinutes(startTime);
     let blockedMinutes;
 
-    if (duration === 45 || duration === 60) {
+    if (duration === 30) {
+      blockedMinutes = startMinutes + 60;
+    } else if (duration === 60) {
       blockedMinutes = startMinutes + 90;
     } else if (duration === 90) {
       blockedMinutes = startMinutes + 120;

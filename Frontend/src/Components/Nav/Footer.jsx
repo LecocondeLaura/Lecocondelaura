@@ -5,48 +5,47 @@ function Footer() {
   const location = useLocation();
   const currentYear = new Date().getFullYear();
 
-  // Ne pas afficher le Footer sur les pages login et dashboard (et sous-routes)
-  if (location.pathname === "/login" || location.pathname.startsWith("/dashboard")) {
+  if (
+    location.pathname === "/login" ||
+    location.pathname.startsWith("/dashboard")
+  ) {
     return null;
   }
 
   return (
-    <footer className="bg-[#47403B] text-white mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <div className="md:text-center md:justify-center md:items-center flex flex-col md:flex-row gap-8 mb-8">
-          <div className="flex flex-col md:flex-row text-center md:items-center md:justify-end gap-4 md:gap-6">
-            <Link
-              to="/mentions-legales"
-              className="text-sm md:text-base text-white/80 hover:text-white transition-colors duration-300 underline-offset-4 hover:underline"
-            >
-              Mentions légales
-            </Link>
-            <Link
-              to="/politique-confidentialite"
-              className="text-sm md:text-base text-white/80 hover:text-white transition-colors duration-300 underline-offset-4 hover:underline"
-            >
-              Politique de confidentialité
-            </Link>
-          </div>
+    <footer className="mt-auto border-t border-ink/10 bg-ink text-washi">
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mb-8 flex flex-col items-center gap-3 md:flex-row md:justify-center md:gap-8">
+          <Link
+            to="/mentions-legales"
+            className="font-body text-sm text-washi/70 transition-colors hover:text-washi"
+          >
+            Mentions légales
+          </Link>
+          <Link
+            to="/politique-confidentialite"
+            className="font-body text-sm text-washi/70 transition-colors hover:text-washi"
+          >
+            Politique de confidentialité
+          </Link>
         </div>
-
-        <div className="border-t border-white/20 my-2"></div>
-
-        <div className="text-center">
-          <p className="text-sm md:text-base mb-2">
-            © {currentYear} Le cocon de Laura – Tous droits réservés
+        <div className="border-t border-washi/15 pt-6 text-center">
+          <p className="font-alex-brush text-2xl text-sakura-soft">
+            Le cocon de Laura
           </p>
-          <p className="text-xs md:text-sm text-white/60">
+          <p className="mt-2 font-body text-sm text-washi/60">
+            © {currentYear} — Tous droits réservés
+          </p>
+          <p className="mt-2 font-body text-xs text-washi/40">
             Site réalisé par{" "}
             <a
               href="https://florentindev.fr"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/80 hover:text-white transition-colors duration-300 underline-offset-4 hover:underline"
+              className="underline-offset-4 hover:text-washi/70 hover:underline"
             >
               Florentin Fallon
-            </a>{" "}
-            – Développeur web
+            </a>
           </p>
         </div>
       </div>

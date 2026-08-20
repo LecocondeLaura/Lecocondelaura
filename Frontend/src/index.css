@@ -2,11 +2,210 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --washi: #f7f1ef;
+  --mist: #efe6e3;
+  --sakura-soft: #f8d5da;
+  --sakura-mid: #e8a8b2;
+  --sakura-deep: #c97886;
+  --ink: #2f2826;
+  --taupe: #6e5656;
+}
 
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--washi);
+    color: var(--ink);
+    font-family: "Outfit", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
 
 @layer utilities {
   .font-alex-brush {
     font-family: "Alex Brush", cursive;
+  }
+}
+
+/* ——— Hero sakura / spa ——— */
+.spa-mist {
+  animation: mist-drift 12s ease-in-out infinite alternate;
+}
+
+@keyframes mist-drift {
+  from {
+    transform: translateX(-4%);
+    opacity: 0.25;
+  }
+  to {
+    transform: translateX(4%);
+    opacity: 0.45;
+  }
+}
+
+.fountain-stream {
+  animation: fountain-flow 2.4s ease-in-out infinite;
+}
+
+.fountain-ripple {
+  animation: fountain-pulse 3s ease-in-out infinite;
+}
+
+.zen-decor-enter {
+  animation: fade-up 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both;
+}
+
+.zen-halo {
+  animation: bloom-soft 5s ease-in-out infinite;
+}
+
+.zen-water {
+  animation: fountain-flow 2.8s ease-in-out infinite;
+}
+
+.zen-droplet {
+  animation: droplet-fall 2.5s ease-in-out infinite;
+}
+
+@keyframes droplet-fall {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.55;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes fountain-flow {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+@keyframes fountain-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.hero-sakura {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(248, 213, 218, 0.45) 0%, transparent 55%),
+    linear-gradient(165deg, #faf6f4 0%, #f3e8e6 42%, #ebe0de 100%);
+}
+
+.sakura-branch-enter {
+  animation: branch-in-left 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sakura-branch-enter-right {
+  transform: scaleX(-1);
+  animation: branch-in-right 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes branch-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-12%) rotate(-4deg);
+  }
+  to {
+    opacity: 0.9;
+    transform: translateX(0) rotate(0);
+  }
+}
+
+@keyframes branch-in-right {
+  from {
+    opacity: 0;
+    transform: scaleX(-1) translateX(-12%) rotate(-4deg);
+  }
+  to {
+    opacity: 0.9;
+    transform: scaleX(-1) translateX(0) rotate(0);
+  }
+}
+
+.sakura-bloom {
+  animation: bloom-soft 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes bloom-soft {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.sakura-petal {
+  border-radius: 70% 10% 70% 10%;
+  background: linear-gradient(135deg, #f8d5da, #e8a8b2);
+  opacity: 0.55;
+  animation-name: petal-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes petal-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.45;
+  }
+  90% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(110vh) rotate(280deg);
+    opacity: 0;
+  }
+}
+
+.hero-fade-up {
+  animation: fade-up 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-fade-up-delay {
+  animation-delay: 0.2s;
+}
+
+.hero-fade-up-delay-2 {
+  animation-delay: 0.4s;
+}
+
+.hero-fade-up-delay-3 {
+  animation-delay: 0.55s;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -25,27 +224,10 @@
   animation: toast-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-@keyframes notice-scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(calc(-100% / 3));
-  }
-}
-
-.notice-carousel {
-  animation: notice-scroll 10s linear infinite;
-}
-
-.notice-carousel:hover {
-  animation-play-state: paused;
-}
-
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-12px);
   }
   to {
     opacity: 1;
@@ -54,33 +236,5 @@
 }
 
 .animate-fade-in {
-  animation: fade-in 1s ease-out;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.3;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(1.1);
-  }
-}
-
-.animate-pulse {
-  animation: pulse 3s ease-in-out infinite;
-}
-
-.delay-300 {
-  animation-delay: 0.3s;
-}
-
-.delay-700 {
-  animation-delay: 0.7s;
-}
-
-.delay-1000 {
-  animation-delay: 1s;
+  animation: fade-in 0.8s ease-out;
 }

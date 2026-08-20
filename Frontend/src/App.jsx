@@ -10,12 +10,12 @@ import About from "./Pages/About";
 import Contact from "./Pages/Contact";
 import Services from "./Pages/Services";
 import Login from "./Pages/Login";
-import Dashboard from "./Pages/Dashboard";
 import TableauDeBord from "./Pages/TableauDeBord";
 import Clients from "./Pages/Clients";
 import GiftCards from "./Pages/GiftCards";
 import Agenda from "./Pages/Agenda";
 import Conges from "./Pages/Conges";
+import Comptes from "./Pages/Comptes";
 import Header from "./Components/Nav/Header";
 import Footer from "./Components/Nav/Footer";
 import ProtectedRoute from "./Components/ProtectedRoute";
@@ -111,14 +111,6 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/avis-clients"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/dashboard/cartes-cadeaux"
             element={
               <ProtectedRoute>
@@ -131,6 +123,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Clients />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/comptes"
+            element={
+              <ProtectedRoute>
+                <Comptes />
               </ProtectedRoute>
             }
           />

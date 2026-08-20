@@ -1,77 +1,66 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
 
-  // Ne pas afficher le Header sur les pages login et dashboard (et sous-routes)
-  if (location.pathname === "/login" || location.pathname.startsWith("/dashboard")) {
+  if (
+    location.pathname === "/login" ||
+    location.pathname.startsWith("/dashboard")
+  ) {
     return null;
   }
 
+  const linkClass = (path) =>
+    `font-body text-base font-medium tracking-wide transition-colors ${
+      isActive(path)
+        ? "text-[#6e5656] border-b-2 border-[#c97886] pb-0.5"
+        : "text-[#6e5656]/80 hover:text-[#6e5656]"
+    }`;
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
-      <nav className="mx-4 mt-4 bg-[#f0cfcf] backdrop-blur-md rounded-2xl border border-transparent shadow-lg">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center space-x-3">
-            <span className="text-white font-semibold text-xl">
-              <Link
-                to="/"
-                className="text-[#8b6f6f] text-4xl font-alex-brush ml-4"
-              >
-                Le cocon de Laura
-              </Link>
-            </span>
-          </div>
+      <nav className="mx-3 mt-3 rounded-2xl border border-[#e8a8b2]/35 bg-[#f0cfcf]/95 shadow-md backdrop-blur-md sm:mx-4 sm:mt-4">
+        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+          <Link
+            to="/"
+            className="font-alex-brush text-3xl text-[#6e5656] sm:text-4xl"
+          >
+            Le cocon de Laura
+          </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link
-              to="/"
-              className={`text-white text-xl font-semibold hover:text-white transition-colors ${
-                isActive("/") ? "border-b-2 border-white" : ""
-              }`}
-            >
+          <div className="hidden items-center gap-8 md:flex">
+            <Link to="/" className={linkClass("/")}>
               Accueil
             </Link>
-            <Link
-              to="/about"
-              className={`text-white text-xl font-semibold hover:text-white transition-colors ${
-                isActive("/about") ? "border-b-2 border-white" : ""
-              }`}
-            >
+            <Link to="/about" className={linkClass("/about")}>
               À propos
             </Link>
-            <Link
-              to="/services"
-              className={`text-white text-xl font-semibold hover:text-white transition-colors ${
-                isActive("/services") ? "border-b-2 border-white" : ""
-              }`}
-            >
+            <Link to="/services" className={linkClass("/services")}>
               Soins
             </Link>
             <Link
               to="/contact"
-              className="text-white text-xl font-semibold hover:text-white hover:shadow-xl hover:scale-105 transition-all duration-300 px-6 py-2 rounded-full bg-[#8b6f6f] shadow-md"
+              className="rounded-full bg-[#6e5656] px-6 py-2.5 font-body text-sm font-semibold tracking-wide text-white shadow-md transition-all hover:scale-105 hover:bg-[#5a4343] hover:shadow-lg"
             >
               Réserver
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-white hover:text-white/80 transition-colors"
+            className="text-[#6e5656] md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
+            aria-label="Menu"
           >
             <svg
-              className="w-6 h-6"
+              className="h-6 w-6"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth="2"
+              strokeWidth="1.5"
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
@@ -84,39 +73,32 @@ function Header() {
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden px-6 pb-4 space-y-3 border-t border-white/30 mt-4 pt-4">
+          <div className="space-y-3 border-t border-[#6e5656]/15 px-4 pb-4 pt-3 md:hidden">
             <Link
               to="/"
-              className={`block py-2 text-xl font-semibold text-white hover:text-white transition-colors ${
-                isActive("/") ? "border-l-4 border-white pl-2" : ""
-              }`}
+              className="block py-2 font-body text-[#6e5656]"
               onClick={() => setIsMenuOpen(false)}
             >
               Accueil
             </Link>
             <Link
               to="/about"
-              className={`block py-2 text-xl font-semibold text-white hover:text-white transition-colors ${
-                isActive("/about") ? "border-l-4 border-white pl-2" : ""
-              }`}
+              className="block py-2 font-body text-[#6e5656]"
               onClick={() => setIsMenuOpen(false)}
             >
               À propos
             </Link>
             <Link
               to="/services"
-              className={`block py-2 text-xl font-semibold text-white hover:text-white transition-colors ${
-                isActive("/services") ? "border-l-4 border-white pl-2" : ""
-              }`}
+              className="block py-2 font-body text-[#6e5656]"
               onClick={() => setIsMenuOpen(false)}
             >
               Soins
             </Link>
             <Link
               to="/contact"
-              className="block text-white text-xl font-semibold hover:text-white hover:shadow-xl hover:scale-105 transition-all duration-300 px-6 py-2 rounded-full bg-[#e0bfbf] hover:bg-[#d9b3b3] shadow-md text-center"
+              className="block rounded-full bg-[#6e5656] px-5 py-2.5 text-center font-body text-sm font-semibold text-white"
               onClick={() => setIsMenuOpen(false)}
             >
               Réserver

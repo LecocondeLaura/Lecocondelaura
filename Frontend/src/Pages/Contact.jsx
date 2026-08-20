@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import {
+  EnvelopeIcon,
+  PhoneIcon,
+  MapPinIcon,
+  GiftIcon,
+} from "@heroicons/react/24/outline";
 import {
   addAppointment,
   getAvailableTimesForDate,
 } from "../utils/appointments";
 import API_BASE_URL from "../config/api.config.js";
+import { BOOKING_SERVICES } from "../Data/bookingServices.js";
 
 function Contact() {
+  const [searchParams] = useSearchParams();
   const showAdress = true;
   const [upcomingClosures, setUpcomingClosures] = useState([]);
   const [formData, setFormData] = useState({
@@ -28,13 +37,19 @@ function Contact() {
 
   const allTimes = ["09:00", "11:00", "14:00", "16:00", "18:00"];
 
-  // Date du jour au format YYYY-MM-DD (fuseau local)
+  // Préremplir le soin si on arrive depuis une card « Réserver »
+  useEffect(() => {
+    const serviceParam = searchParams.get("service");
+    if (serviceParam && BOOKING_SERVICES.includes(serviceParam)) {
+      setFormData((prev) => ({ ...prev, service: serviceParam }));
+    }
+  }, [searchParams]);
+
   const getTodayStr = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   };
 
-  // True si la date est aujourd'hui ET que l'heure du créneau est déjà passée (aligné sur l'heure actuelle)
   const isTimePast = (dateStr, timeStr) => {
     if (!dateStr || dateStr !== getTodayStr()) return false;
     const [hours, minutes] = timeStr.split(":").map(Number);
@@ -44,7 +59,6 @@ function Contact() {
     return slotMinutes <= nowMinutes;
   };
 
-  // Date minimale pour réserver : à partir du 16 février (du jour ou de l'année en cours)
   const getMinBookingDate = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -53,7 +67,6 @@ function Contact() {
     return today < feb16 ? feb16 : today;
   };
 
-  // Charger les prochaines fermetures pour la bannière
   useEffect(() => {
     fetch(`${API_BASE_URL}/closures/upcoming`)
       .then((res) => res.json())
@@ -63,7 +76,6 @@ function Contact() {
       .catch(() => {});
   }, []);
 
-  // Rafraîchir la liste des créneaux chaque minute quand la date sélectionnée est aujourd'hui (heure actuelle)
   const [, setTick] = useState(0);
   useEffect(() => {
     if (!formData.date || formData.date !== getTodayStr()) return;
@@ -80,20 +92,17 @@ function Contact() {
     });
   };
 
-  // Fonction pour obtenir la durée du soin en minutes
   const getServiceDuration = (serviceName) => {
-    if (serviceName.includes("45min")) return 45;
+    if (serviceName.includes("30min")) return 30;
     if (serviceName.includes("60min")) return 60;
     if (serviceName.includes("90min")) return 90;
-    return 60; // Par défaut
+    return 60;
   };
 
-  // Fonction pour obtenir les créneaux bloqués selon la durée du soin
   const getBlockedSlots = (startTime, serviceName) => {
     const duration = getServiceDuration(serviceName);
     let blockedSlots = [startTime];
 
-    // Convertir l'heure en minutes depuis minuit
     const timeToMinutes = (time) => {
       const [hours, minutes] = time.split(":").map(Number);
       return hours * 60 + minutes;
@@ -102,18 +111,16 @@ function Contact() {
     const startMinutes = timeToMinutes(startTime);
     let blockedMinutes;
 
-    if (duration === 45 || duration === 60) {
-      // Pour 45min ou 1h → bloquer 1h30 (90 minutes)
+    if (duration === 30) {
+      blockedMinutes = startMinutes + 60;
+    } else if (duration === 60) {
       blockedMinutes = startMinutes + 90;
     } else if (duration === 90) {
-      // Pour 1h30 → bloquer 2h (120 minutes)
       blockedMinutes = startMinutes + 120;
     }
 
-    // Trouver tous les créneaux qui se chevauchent
     allTimes.forEach((time) => {
       const timeMinutes = timeToMinutes(time);
-      // Si le créneau commence avant la fin du soin, il est bloqué
       if (timeMinutes >= startMinutes && timeMinutes < blockedMinutes) {
         if (!blockedSlots.includes(time)) {
           blockedSlots.push(time);
@@ -124,7 +131,6 @@ function Contact() {
     return blockedSlots;
   };
 
-  // Mettre à jour les horaires disponibles quand la date ou le service change
   useEffect(() => {
     const fetchAvailableTimes = async () => {
       if (formData.date && formData.service) {
@@ -145,24 +151,19 @@ function Contact() {
 
           const closureBlockedSet = new Set(result.closureBlockedTimes || []);
 
-          // Calculer tous les créneaux bloqués par les rendez-vous existants
           const allBlockedSlots = new Set();
           result.reservedAppointments.forEach((apt) => {
             const blocked = getBlockedSlots(apt.heure, apt.service);
             blocked.forEach((slot) => allBlockedSlots.add(slot));
           });
 
-          // Filtrer les créneaux disponibles en excluant congés / indisponibilités et RDV
           let filtered = allTimes.filter(
             (time) =>
               !closureBlockedSet.has(time) && !allBlockedSlots.has(time),
           );
 
-          // Pour chaque créneau disponible, vérifier s'il serait bloqué par le service sélectionné
-          // (on ne peut pas prendre un créneau si notre soin bloquerait un autre créneau déjà réservé)
           filtered = filtered.filter((time) => {
             const wouldBlock = getBlockedSlots(time, formData.service);
-            // Vérifier si notre soin ne chevauche pas avec un rendez-vous existant
             return !wouldBlock.some((blockedTime) =>
               result.reservedAppointments.some(
                 (apt) => apt.heure === blockedTime,
@@ -170,7 +171,6 @@ function Contact() {
             );
           });
 
-          // Pour la date du jour : exclure les créneaux déjà passés (aligné sur l'heure actuelle)
           if (formData.date === getTodayStr()) {
             filtered = filtered.filter(
               (time) => !isTimePast(formData.date, time),
@@ -178,7 +178,6 @@ function Contact() {
           }
 
           setAvailableTimes(filtered);
-          // Réinitialiser l'heure si elle n'est plus disponible
           if (formData.heure && !filtered.includes(formData.heure)) {
             setFormData((prev) => ({ ...prev, heure: "" }));
           }
@@ -205,10 +204,8 @@ function Contact() {
   const handleChange = (e) => {
     const { name, value, checked } = e.target;
 
-    // Gérer la checkbox carte cadeaux
     if (name === "carteCadeaux") {
       setCarteCadeaux(checked);
-      // Si on coche la carte cadeaux, on vide date et heure
       if (checked) {
         setFormData((prev) => ({
           ...prev,
@@ -231,15 +228,12 @@ function Contact() {
     setIsLoading(true);
 
     try {
-      // Si ce n'est pas une carte cadeaux, vérifier la date et l'heure
       if (!carteCadeaux) {
-        // Vérifier que la date est à partir du 16 février
         if (formData.date < getMinBookingDate()) {
           alert("Les réservations sont possibles à partir du 16 février.");
           setIsLoading(false);
           return;
         }
-        // Vérifier que le créneau est toujours disponible
         const result = await getAvailableTimesForDate(formData.date, allTimes);
         if (result.hasError) {
           alert(
@@ -258,14 +252,12 @@ function Contact() {
           return;
         }
 
-        // Calculer tous les créneaux bloqués par les rendez-vous existants
         const allBlockedSlots = new Set();
         result.reservedAppointments.forEach((apt) => {
           const blocked = getBlockedSlots(apt.heure, apt.service);
           blocked.forEach((slot) => allBlockedSlots.add(slot));
         });
 
-        // Vérifier si notre créneau est disponible
         if (allBlockedSlots.has(formData.heure)) {
           alert(
             "Ce créneau n'est plus disponible. Veuillez choisir un autre horaire.",
@@ -274,7 +266,6 @@ function Contact() {
           return;
         }
 
-        // Vérifier si notre soin ne chevauche pas avec un rendez-vous existant
         const wouldBlock = getBlockedSlots(formData.heure, formData.service);
         const wouldConflict = wouldBlock.some((blockedTime) =>
           result.reservedAppointments.some((apt) => apt.heure === blockedTime),
@@ -289,7 +280,6 @@ function Contact() {
         }
       }
 
-      // Préparer les données à envoyer
       const dataToSend = {
         ...formData,
         carteCadeaux: carteCadeaux,
@@ -299,7 +289,6 @@ function Contact() {
 
       setIsSubmitted(true);
 
-      // Réinitialiser le formulaire après 15 secondes
       setTimeout(() => {
         setIsSubmitted(false);
         setFormData({
@@ -325,81 +314,102 @@ function Contact() {
     }
   };
 
-  const services = [
-    "Head Spa Kodomo - 60min (enfant)",
-    "Head Spa Rituel Détente - 60min",
-    "Head Spa Rituel Ultime - 90min",
-  ];
+  const services = BOOKING_SERVICES;
+
+  const inputClass =
+    "w-full rounded-xl border border-ink/10 bg-washi/60 px-4 py-3.5 font-body text-ink outline-none transition-all duration-300 placeholder:text-ink/35 focus:border-sakura-mid focus:bg-white focus:ring-4 focus:ring-sakura-soft/40";
+
+  const labelClass =
+    "mb-2 block font-body text-xs font-medium tracking-[0.12em] text-ink/55 uppercase";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fef5f5] via-white to-[#fef5f5] pt-20 pb-16 px-4 sm:px-6 lg:px-12 lg:pt-16 lg:pb-20 lg:mt-20 mt-12 relative">
-      <div className="max-w-[1600px] mx-auto h-full">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-12 items-start h-full">
-          {/* Colonne gauche : Titre et informations */}
-          <div className="lg:pl-8">
-            <div className="relative mb-8">
-              <div className="absolute inset-0 flex items-center justify-center opacity-5">
-                <h1 className="text-9xl font-black text-[#f0cfcf]">
-                  RÉSERVATION
-                </h1>
-              </div>
-              <div className="relative z-10">
-                <h1 className="text-5xl sm:text-6xl font-black text-[#8b6f6f] mb-6 leading-tight">
-                  Réservez votre
-                  <br />
-                  <span className="text-4xl sm:text-5xl text-[#f0cfcf] font-alex-brush">
-                    Head Spa
-                  </span>
-                </h1>
-                <div className="w-24 h-1.5 bg-gradient-to-r from-[#f0cfcf] to-[#e0bfbf] mb-8 rounded-full"></div>
-                <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                  Remplissez le formulaire pour réserver votre moment de
-                  détente.
+    <div className="relative min-h-screen overflow-hidden bg-washi pt-28 pb-20">
+      <div
+        className="pointer-events-none absolute -left-24 top-40 h-72 w-72 rounded-full bg-sakura-soft/40 blur-3xl"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -right-16 top-24 h-80 w-80 rounded-full bg-sakura-mid/20 blur-3xl"
+        aria-hidden
+      />
+
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-6">
+        <header className="mb-12 text-center md:mb-16">
+          <h1 className="font-display text-4xl font-medium text-ink sm:text-5xl md:text-6xl">
+            Réservez votre{" "}
+            <span className="font-alex-brush text-sakura-deep">Head Spa</span>
+          </h1>
+          <div className="mx-auto mt-6 h-px w-16 bg-sakura-mid/70" />
+          <p className="mx-auto mt-6 max-w-xl font-body text-base leading-relaxed text-ink/60">
+            Choisissez votre soin, votre créneau… et laissez-vous guider vers un
+            moment de douceur à Jonzac.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[0.9fr_1.35fr] lg:gap-10">
+          {/* Infos salon */}
+          <aside className="space-y-5 lg:sticky lg:top-28">
+            <div className="overflow-hidden rounded-3xl border border-sakura-soft/70 bg-white shadow-[0_20px_50px_-24px_rgba(47,40,38,0.25)]">
+              <div className="bg-gradient-to-br from-ink via-[#3a302e] to-sakura-deep/70 px-7 py-8 text-washi">
+                <p className="font-alex-brush text-3xl text-[#f8d5da]">
+                  Le cocon de Laura
+                </p>
+                <p className="mt-2 font-body text-sm text-washi/70">
+                  Head Spa japonais · Jonzac
                 </p>
               </div>
-            </div>
 
-            {/* Informations de contact */}
-            <div className="space-y-6">
-              <div className="bg-[#fcebeb] rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-[#f0cfcf]/50 group">
-                <div className="flex items-start space-x-4 mb-6">
-                  <div className="text-4xl group-hover:scale-110 transition-transform duration-300">
-                    📧
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#8b6f6f] mb-1 text-lg">
+              <div className="space-y-5 p-7">
+                <a
+                  href="mailto:lecocondelaura17@gmail.com"
+                  className="group flex items-start gap-4"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f0cfcf]/35 text-[#f8d5da] transition-colors group-hover:bg-[#f0cfcf]/55">
+                    <EnvelopeIcon className="h-5 w-5" />
+                  </span>
+                  <span>
+                    <span className="block font-body text-xs tracking-wider text-ink/45 uppercase">
                       Email
-                    </h3>
-                    <p className="text-gray-600">lecocondelaura17@gmail.com</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4 mb-6">
-                  <div className="text-4xl group-hover:scale-110 transition-transform duration-300">
-                    📞
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#8b6f6f] mb-1 text-lg">
+                    </span>
+                    <span className="font-body text-sm text-ink group-hover:text-sakura-deep">
+                      lecocondelaura17@gmail.com
+                    </span>
+                  </span>
+                </a>
+
+                <a
+                  href="tel:0787984341"
+                  className="group flex items-start gap-4"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f0cfcf]/35 text-[#f8d5da] transition-colors group-hover:bg-[#f0cfcf]/55">
+                    <PhoneIcon className="h-5 w-5" />
+                  </span>
+                  <span>
+                    <span className="block font-body text-xs tracking-wider text-ink/45 uppercase">
                       Téléphone
-                    </h3>
-                    <p className="text-gray-600">07 87 98 43 41</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="text-4xl group-hover:scale-110 transition-transform duration-300">
-                    📍
-                  </div>
+                    </span>
+                    <span className="font-body text-sm text-ink group-hover:text-sakura-deep">
+                      07 87 98 43 41
+                    </span>
+                  </span>
+                </a>
+
+                <div className="flex items-start gap-4">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f0cfcf]/35 text-[#f8d5da]">
+                    <MapPinIcon className="h-5 w-5" />
+                  </span>
                   <div>
-                    <h3 className="font-bold text-[#8b6f6f] mb-1 text-lg">
+                    <span className="block font-body text-xs tracking-wider text-ink/45 uppercase">
                       Adresse
-                    </h3>
+                    </span>
                     <p
-                      className={`text-gray-600 select-none ${!showAdress ? "blur-md pointer-events-none" : ""}`}
+                      className={`font-body text-sm text-ink ${!showAdress ? "select-none blur-md" : ""}`}
                       aria-hidden={!showAdress}
                     >
                       70 rue Sadi Carnot, 17500 Jonzac
                     </p>
                     {!showAdress && (
-                      <p className="text-sm text-gray-500 mt-1 italic">
+                      <p className="mt-1 font-body text-xs italic text-ink/45">
                         Bientôt révélée à l&apos;ouverture
                       </p>
                     )}
@@ -407,319 +417,311 @@ function Contact() {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Colonne droite : Formulaire */}
-          <div className="relative lg:-mt-8">
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#f0cfcf] to-[#e0bfbf] rounded-3xl blur opacity-20"></div>
-            <div className="relative bg-white rounded-3xl shadow-2xl p-8 sm:p-10 lg:p-12 border border-gray-100 w-full">
-              {isSubmitted ? (
-                <div className="text-center py-16">
-                  <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-[#f0cfcf] to-[#e0bfbf] rounded-full mb-6 animate-pulse">
-                    <svg
-                      className="w-12 h-12 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-                  <h2 className="text-4xl font-black text-[#8b6f6f]">
-                    {carteCadeaux
-                      ? "Demande de carte cadeau envoyée"
-                      : "Réservation confirmée"}
-                  </h2>
+            <div className="rounded-2xl border border-dashed border-sakura-mid/50 bg-sakura-soft/20 px-6 py-5">
+              <p className="font-display text-lg text-ink">
+                Un premier pas vers la détente
+              </p>
+              <p className="mt-2 font-body text-sm leading-relaxed text-ink/60">
+                Essayez le{" "}
+                <strong className="font-medium text-sakura-deep">
+                  Soin Découverte
+                </strong>{" "}
+                à 50€ — idéal pour découvrir le Head Spa en douceur.
+              </p>
+            </div>
+          </aside>
+
+          {/* Formulaire */}
+          <div className="rounded-3xl border border-sakura-soft/60 bg-white p-6 shadow-[0_24px_60px_-28px_rgba(47,40,38,0.28)] sm:p-8 lg:p-10">
+            {isSubmitted ? (
+              <div className="flex flex-col items-center py-16 text-center">
+                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-sakura-soft to-sakura-mid">
+                  <svg
+                    className="h-10 w-10 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
                 </div>
-              ) : (
-                <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border-2 border-[#f0cfcf]/50">
-                  {upcomingClosures.length > 0 && (
-                    <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200">
-                      <p className="text-amber-800 font-semibold text-sm flex items-center gap-2 mb-2">
-                        <span className="text-lg" aria-hidden>
-                          📅
-                        </span>
-                        Le salon est fermé
-                      </p>
-                      <ul className="text-amber-700 text-sm space-y-1">
-                        {upcomingClosures.map((c, i) => {
-                          const scopeSuffix =
-                            c.timeScope === "morning"
-                              ? " — matinée"
-                              : c.timeScope === "afternoon"
-                                ? " — après-midi"
-                                : c.timeScope === "custom" &&
-                                    c.blockedSlots?.length
-                                  ? ` — ${c.blockedSlots
-                                      .map((t) => {
-                                        const [h, m] = t.split(":");
-                                        return `${parseInt(h, 10)}h${m}`;
-                                      })
-                                      .join(", ")}`
-                                  : "";
-                          return (
-                            <li key={i}>
-                              {c.startDate === c.endDate
-                                ? `Le ${formatClosureDate(c.startDate)}`
-                                : `Du ${formatClosureDate(c.startDate)} au ${formatClosureDate(c.endDate)}`}
-                              {scopeSuffix}
-                              {c.label ? ` — ${c.label}` : ""}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  )}
-                  <form onSubmit={handleSubmit} className="space-y-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="group">
-                        <label
-                          htmlFor="nom"
-                          className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
-                        >
-                          Nom *
-                        </label>
-                        <input
-                          type="text"
-                          id="nom"
-                          name="nom"
-                          value={formData.nom}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
-                          placeholder="Votre nom"
-                        />
-                      </div>
-                      <div className="group">
-                        <label
-                          htmlFor="prenom"
-                          className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
-                        >
-                          Prénom *
-                        </label>
-                        <input
-                          type="text"
-                          id="prenom"
-                          name="prenom"
-                          value={formData.prenom}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
-                          placeholder="Votre prénom"
-                        />
-                      </div>
-                    </div>
+                <h2 className="font-display text-3xl font-medium text-ink sm:text-4xl">
+                  {carteCadeaux
+                    ? "Demande envoyée"
+                    : "Réservation enregistrée"}
+                </h2>
+                <p className="mt-3 max-w-sm font-body text-ink/60">
+                  {carteCadeaux
+                    ? "Laura vous recontactera rapidement pour votre carte cadeau."
+                    : "Un email de confirmation va vous être envoyé. À très bientôt."}
+                </p>
+              </div>
+            ) : (
+              <>
+                {upcomingClosures.length > 0 && (
+                  <div className="mb-8 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-5 py-4">
+                    <p className="mb-2 font-body text-sm font-semibold text-amber-900">
+                      Fermetures à venir
+                    </p>
+                    <ul className="space-y-1 font-body text-sm text-amber-800/90">
+                      {upcomingClosures.map((c, i) => {
+                        const scopeSuffix =
+                          c.timeScope === "morning"
+                            ? " — matinée"
+                            : c.timeScope === "afternoon"
+                              ? " — après-midi"
+                              : c.timeScope === "custom" &&
+                                  c.blockedSlots?.length
+                                ? ` — ${c.blockedSlots
+                                    .map((t) => {
+                                      const [h, m] = t.split(":");
+                                      return `${parseInt(h, 10)}h${m}`;
+                                    })
+                                    .join(", ")}`
+                                : "";
+                        return (
+                          <li key={i}>
+                            {c.startDate === c.endDate
+                              ? `Le ${formatClosureDate(c.startDate)}`
+                              : `Du ${formatClosureDate(c.startDate)} au ${formatClosureDate(c.endDate)}`}
+                            {scopeSuffix}
+                            {c.label ? ` — ${c.label}` : ""}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="group">
-                        <label
-                          htmlFor="email"
-                          className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
-                        >
-                          Email *
-                        </label>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
-                          placeholder="votre@email.com"
-                        />
-                      </div>
-                      <div className="group">
-                        <label
-                          htmlFor="telephone"
-                          className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
-                        >
-                          Téléphone *
-                        </label>
-                        <input
-                          type="tel"
-                          id="telephone"
-                          name="telephone"
-                          value={formData.telephone}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
-                          placeholder="06 12 34 56 78"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="group">
-                      <label
-                        htmlFor="service"
-                        className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
-                      >
-                        Soins souhaités *
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="nom" className={labelClass}>
+                        Nom *
                       </label>
-                      <select
-                        id="service"
-                        name="service"
-                        value={formData.service}
+                      <input
+                        type="text"
+                        id="nom"
+                        name="nom"
+                        value={formData.nom}
                         onChange={handleChange}
                         required
-                        className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white appearance-none cursor-pointer"
-                      >
-                        <option value="">Sélectionnez un soin</option>
-                        {services.map((service, index) => (
-                          <option key={index} value={service}>
-                            {service}
-                          </option>
-                        ))}
-                      </select>
-
-                      {/* Checkbox Carte Cadeaux - affichée uniquement si un service est sélectionné */}
-                      {formData.service && (
-                        <div className="mt-4 flex items-center">
-                          <input
-                            type="checkbox"
-                            id="carteCadeaux"
-                            name="carteCadeaux"
-                            checked={carteCadeaux}
-                            onChange={handleChange}
-                            className="w-5 h-5 text-[#8b6f6f] border-2 border-gray-300 rounded focus:ring-2 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] cursor-pointer"
-                          />
-                          <label
-                            htmlFor="carteCadeaux"
-                            className="ml-3 text-sm font-semibold text-gray-700 cursor-pointer"
-                          >
-                            CARTE CADEAUX
-                          </label>
-                        </div>
-                      )}
+                        className={inputClass}
+                        placeholder="Dupont"
+                      />
                     </div>
+                    <div>
+                      <label htmlFor="prenom" className={labelClass}>
+                        Prénom *
+                      </label>
+                      <input
+                        type="text"
+                        id="prenom"
+                        name="prenom"
+                        value={formData.prenom}
+                        onChange={handleChange}
+                        required
+                        className={inputClass}
+                        placeholder="Marie"
+                      />
+                    </div>
+                  </div>
 
-                    {/* Champs Date et Heure - cachés si carte cadeaux est cochée */}
-                    {!carteCadeaux && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="group">
-                          <label
-                            htmlFor="date"
-                            className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
-                          >
-                            Date souhaitée *
-                          </label>
-                          <input
-                            type="date"
-                            id="date"
-                            name="date"
-                            value={formData.date}
-                            onChange={handleChange}
-                            required
-                            min={getMinBookingDate()}
-                            className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
-                          />
-                        </div>
-                        <div className="group">
-                          <label
-                            htmlFor="heure"
-                            className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
-                          >
-                            Heure souhaitée *
-                          </label>
-                          {formData.date ? (
-                            availableTimes.length > 0 ||
-                            allTimes.some((t) =>
-                              isTimePast(formData.date, t),
-                            ) ? (
-                              <select
-                                id="heure"
-                                name="heure"
-                                value={formData.heure}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 bg-gray-50 focus:bg-white appearance-none cursor-pointer"
-                              >
-                                <option value="">Sélectionnez une heure</option>
-                                {allTimes.map((heure, index) => {
-                                  const past = isTimePast(formData.date, heure);
-                                  const available =
-                                    availableTimes.includes(heure);
-                                  return (
-                                    <option
-                                      key={index}
-                                      value={heure}
-                                      disabled={past || !available}
-                                      style={
-                                        past ? { color: "#9ca3af" } : undefined
-                                      }
-                                    >
-                                      {heure}
-                                    </option>
-                                  );
-                                })}
-                              </select>
-                            ) : (
-                              <div className="w-full px-5 py-4 border-2 border-amber-200 rounded-xl bg-amber-50">
-                                <p className="text-amber-800 text-sm font-semibold">
-                                  {isDateClosed
-                                    ? "Le salon est fermé."
-                                    : availabilityError
-                                      ? "Disponibilités indisponibles temporairement. Réessayez dans un instant."
-                                    : "Aucun créneau disponible pour cette date"}
-                                </p>
-                              </div>
-                            )
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="email" className={labelClass}>
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        className={inputClass}
+                        placeholder="votre@email.com"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="telephone" className={labelClass}>
+                        Téléphone *
+                      </label>
+                      <input
+                        type="tel"
+                        id="telephone"
+                        name="telephone"
+                        value={formData.telephone}
+                        onChange={handleChange}
+                        required
+                        className={inputClass}
+                        placeholder="06 12 34 56 78"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="service" className={labelClass}>
+                      Soin souhaité *
+                    </label>
+                    <select
+                      id="service"
+                      name="service"
+                      value={formData.service}
+                      onChange={handleChange}
+                      required
+                      className={`${inputClass} cursor-pointer appearance-none`}
+                    >
+                      <option value="">Sélectionnez un soin</option>
+                      {services.map((service, index) => (
+                        <option key={index} value={service}>
+                          {service}
+                        </option>
+                      ))}
+                    </select>
+
+                    {formData.service && (
+                      <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-xl border border-sakura-soft/80 bg-sakura-soft/15 px-4 py-3 transition-colors hover:bg-sakura-soft/30">
+                        <input
+                          type="checkbox"
+                          id="carteCadeaux"
+                          name="carteCadeaux"
+                          checked={carteCadeaux}
+                          onChange={handleChange}
+                          className="h-4 w-4 rounded border-ink/20 text-sakura-deep focus:ring-sakura-mid"
+                        />
+                        <GiftIcon className="h-5 w-5 text-sakura-deep" />
+                        <span className="font-body text-sm font-medium text-ink">
+                          Demander une carte cadeau
+                        </span>
+                      </label>
+                    )}
+                  </div>
+
+                  {!carteCadeaux && (
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="date" className={labelClass}>
+                          Date souhaitée *
+                        </label>
+                        <input
+                          type="date"
+                          id="date"
+                          name="date"
+                          value={formData.date}
+                          onChange={handleChange}
+                          required
+                          min={getMinBookingDate()}
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="heure" className={labelClass}>
+                          Heure souhaitée *
+                        </label>
+                        {formData.date ? (
+                          availableTimes.length > 0 ||
+                          allTimes.some((t) =>
+                            isTimePast(formData.date, t),
+                          ) ? (
+                            <select
+                              id="heure"
+                              name="heure"
+                              value={formData.heure}
+                              onChange={handleChange}
+                              required
+                              className={`${inputClass} cursor-pointer appearance-none`}
+                            >
+                              <option value="">Sélectionnez une heure</option>
+                              {allTimes.map((heure, index) => {
+                                const past = isTimePast(formData.date, heure);
+                                const available =
+                                  availableTimes.includes(heure);
+                                const disabled = past || !available;
+                                return (
+                                  <option
+                                    key={index}
+                                    value={heure}
+                                    disabled={disabled}
+                                    style={
+                                      disabled ? { color: "#9ca3af" } : undefined
+                                    }
+                                  >
+                                    {heure}
+                                    {past
+                                      ? " — passé"
+                                      : !available
+                                        ? " — indisponible"
+                                        : ""}
+                                  </option>
+                                );
+                              })}
+                            </select>
                           ) : (
-                            <div className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-gray-100">
-                              <p className="text-gray-500 text-sm">
-                                Veuillez d'abord sélectionner une date
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
+                              <p className="font-body text-sm font-medium text-amber-800">
+                                {isDateClosed
+                                  ? "Le salon est fermé ce jour-là."
+                                  : availabilityError
+                                    ? "Disponibilités indisponibles temporairement. Réessayez dans un instant."
+                                    : "Aucun créneau disponible pour cette date."}
                               </p>
                             </div>
-                          )}
-                        </div>
+                          )
+                        ) : (
+                          <div className="rounded-xl border border-ink/8 bg-washi/80 px-4 py-3.5">
+                            <p className="font-body text-sm text-ink/45">
+                              Veuillez d&apos;abord sélectionner une date
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    )}
-
-                    <div className="group">
-                      <label
-                        htmlFor="message"
-                        className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide"
-                      >
-                        Message (optionnel)
-                      </label>
-                      <textarea
-                        id="message"
-                        name="message"
-                        value={formData.message}
-                        onChange={handleChange}
-                        rows="5"
-                        className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all duration-300 resize-none bg-gray-50 focus:bg-white"
-                        placeholder="Des informations complémentaires, allergies, grossesse..."
-                      ></textarea>
                     </div>
+                  )}
 
-                    <div className="pt-4">
-                      <button
-                        type="submit"
-                        disabled={
-                          isLoading ||
-                          availabilityError ||
-                          (!carteCadeaux && !formData.heure) ||
-                          (carteCadeaux && !formData.service)
-                        }
-                        className="w-full bg-[#8b6f6f] text-white py-5 rounded-xl font-black text-lg uppercase tracking-wide hover:bg-[#7a5f5f] hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                      >
-                        {isLoading
-                          ? "Envoi en cours..."
-                          : carteCadeaux
-                            ? "Confirmer la demande de carte cadeaux"
-                            : "Confirmer la réservation"}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-            </div>
+                  <div>
+                    <label htmlFor="message" className={labelClass}>
+                      Message{" "}
+                      <span className="normal-case tracking-normal text-ink/35">
+                        (optionnel)
+                      </span>
+                    </label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
+                      rows="4"
+                      className={`${inputClass} resize-none`}
+                      placeholder="Allergies, grossesse, envies particulières…"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={
+                      isLoading ||
+                      availabilityError ||
+                      (!carteCadeaux && !formData.heure) ||
+                      (carteCadeaux && !formData.service)
+                    }
+                    className="w-full rounded-full bg-ink py-4 font-body text-sm font-medium tracking-wide text-washi shadow-lg transition-all hover:scale-[1.01] hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
+                  >
+                    {isLoading
+                      ? "Envoi en cours…"
+                      : carteCadeaux
+                        ? "Demander la carte cadeau"
+                        : "Confirmer la réservation"}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -2,13 +2,13 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   HomeIcon,
-  ChatBubbleLeftRightIcon,
   UserGroupIcon,
   GiftIcon,
   CalendarIcon,
   CalendarDaysIcon,
   ArrowLeftOnRectangleIcon,
   XMarkIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import { useNotifications } from "../../contexts/NotificationContext";
 
@@ -36,12 +36,6 @@ function Sidebar({ onLogout, onClose }) {
       notificationKey: "appointments",
     },
     {
-      name: "Avis clients",
-      path: "/dashboard/avis-clients",
-      icon: ChatBubbleLeftRightIcon,
-      notificationKey: "reviews",
-    },
-    {
       name: "Cartes cadeaux",
       path: "/dashboard/cartes-cadeaux",
       icon: GiftIcon,
@@ -51,6 +45,12 @@ function Sidebar({ onLogout, onClose }) {
       name: "Suivi clients",
       path: "/dashboard/clients",
       icon: UserGroupIcon,
+      notificationKey: null,
+    },
+    {
+      name: "Comptes",
+      path: "/dashboard/comptes",
+      icon: BanknotesIcon,
       notificationKey: null,
     },
     {

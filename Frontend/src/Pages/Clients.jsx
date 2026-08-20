@@ -9,6 +9,7 @@ import {
   CheckIcon,
   SparklesIcon,
   XCircleIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import DashboardLayout from "../Components/Dashboard/DashboardLayout";
 import API_BASE_URL from "../config/api.config.js";
@@ -100,7 +101,10 @@ function Clients() {
         nom: selectedClient.nom,
         prenom: selectedClient.prenom,
         telephone: selectedClient.telephone,
-        ...editForm,
+        allergies: editForm.allergies,
+        notes: editForm.notes,
+        preferences: editForm.preferences,
+        autresInfos: editForm.autresInfos,
       };
 
       const response = await fetch(`${API_BASE_URL}/clients`, {
@@ -114,16 +118,51 @@ function Clients() {
 
       const data = await response.json();
       if (data.success) {
-        showSuccess("Informations client mises à jour avec succès");
+        showSuccess("Client enregistré");
         setIsEditing(false);
         setSelectedClient(null);
         loadClients();
       } else {
-        showError(data.message || "Erreur lors de la mise à jour");
+        showError(data.message || "Erreur lors de l'enregistrement");
       }
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde:", error);
-      showError("Erreur lors de la sauvegarde");
+      console.error("Erreur:", error);
+      showError("Erreur lors de l'enregistrement");
+    }
+  };
+
+  const handleDeleteClient = async (client) => {
+    const name = `${client.prenom || ""} ${client.nom || ""}`.trim() || client.email;
+    const confirmed = window.confirm(
+      `Supprimer le client « ${name} » ?\n\nCela supprimera aussi tous ses rendez-vous et cartes cadeaux. Cette action est irréversible.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_BASE_URL}/clients/${encodeURIComponent(client.email)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        showSuccess("Client supprimé");
+        setClientSoinsModal(null);
+        setIsEditing(false);
+        setSelectedClient(null);
+        loadClients();
+      } else {
+        showError(data.message || "Erreur lors de la suppression");
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      showError("Erreur lors de la suppression");
     }
   };
 
@@ -549,16 +588,28 @@ function Clients() {
                                 </div>
                               </div>
                             </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditClick(client);
-                              }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#8b6f6f] text-white rounded-lg font-semibold hover:bg-[#7a5f5f] transition-colors text-xs flex-shrink-0"
-                            >
-                              <PencilIcon className="w-3.5 h-3.5" />
-                              Modifier
-                            </button>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditClick(client);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#8b6f6f] text-white rounded-lg font-semibold hover:bg-[#7a5f5f] transition-colors text-xs"
+                              >
+                                <PencilIcon className="w-3.5 h-3.5" />
+                                Modifier
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClient(client);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg font-semibold hover:bg-red-100 transition-colors text-xs"
+                              >
+                                <TrashIcon className="w-3.5 h-3.5" />
+                                Supprimer
+                              </button>
+                            </div>
                           </div>
 
                           {/* Informations supplémentaires */}

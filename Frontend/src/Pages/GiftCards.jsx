@@ -9,6 +9,7 @@ import {
   PlusIcon,
   FunnelIcon,
   ArrowsUpDownIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import API_BASE_URL from "../config/api.config.js";
 import DashboardLayout from "../Components/Dashboard/DashboardLayout";
@@ -19,6 +20,8 @@ import { useNotifications } from "../contexts/NotificationContext";
 function GiftCards() {
   const [appointments, setAppointments] = useState([]);
   const [expiringSoon, setExpiringSoon] = useState([]);
+  const [remindedCards, setRemindedCards] = useState([]);
+  const [showRemindedArchive, setShowRemindedArchive] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { showSuccess, showError } = useToast();
@@ -94,6 +97,7 @@ function GiftCards() {
       const data = await response.json();
       if (data.success) {
         setExpiringSoon(data.data || []);
+        setRemindedCards(data.reminded || []);
       }
     } catch (error) {
       console.error(
@@ -181,6 +185,7 @@ function GiftCards() {
       const data = await response.json();
       if (data.success) {
         loadAppointments();
+        loadExpiringSoon();
         showSuccess("Carte cadeau marquée comme utilisée");
       } else {
         showError(data.message || "Erreur lors de la mise à jour");
@@ -188,6 +193,39 @@ function GiftCards() {
     } catch (error) {
       console.error("Erreur:", error);
       showError("Erreur lors de la mise à jour");
+    }
+  };
+
+  const deleteGiftCard = async (appointmentId) => {
+    const confirmed = window.confirm(
+      "Supprimer définitivement cette carte cadeau ? Cette action est irréversible."
+    );
+    if (!confirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_BASE_URL}/appointments/${appointmentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        loadAppointments();
+        loadExpiringSoon();
+        showSuccess("Carte cadeau supprimée");
+        refreshNotifications();
+      } else {
+        showError(data.message || "Erreur lors de la suppression");
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      showError("Erreur lors de la suppression");
     }
   };
 
@@ -295,11 +333,26 @@ function GiftCards() {
       if (filterStatus === "paid")
         return gc.paiementEffectue && !gc.carteCadeauEnvoyee;
       if (filterStatus === "sent")
-        return gc.carteCadeauEnvoyee && !gc.carteCadeauUtilisee;
+        return (
+          gc.carteCadeauEnvoyee &&
+          !gc.carteCadeauUtilisee &&
+          !gc.relanceEnvoyee
+        );
+      if (filterStatus === "reminded")
+        return gc.relanceEnvoyee && !gc.carteCadeauUtilisee;
       if (filterStatus === "used") return gc.carteCadeauUtilisee;
       return true;
     });
   }
+
+  // Archive des relances : API prioritaire, sinon dérivée de la liste locale
+  const remindedArchive =
+    remindedCards.length > 0
+      ? remindedCards
+      : appointments.filter(
+          (a) =>
+            a.carteCadeaux && a.relanceEnvoyee && !a.carteCadeauUtilisee
+        );
 
   // Tri
   const statusOrder = (gc) => {
@@ -386,6 +439,7 @@ function GiftCards() {
                 <option value="pending">En attente de paiement</option>
                 <option value="paid">Payées (à envoyer)</option>
                 <option value="sent">Envoyées (non utilisées)</option>
+                <option value="reminded">Relances envoyées</option>
                 <option value="used">Utilisées</option>
               </select>
               <select
@@ -480,18 +534,19 @@ function GiftCards() {
             </div>
           </div>
 
-          {/* Section des cartes expirant bientôt */}
+          {/* Section des cartes expirant bientôt (à relancer) */}
           {expiringSoon.length > 0 && (
             <div className="mb-6 bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <ClockIcon className="w-6 h-6 text-yellow-600" />
                 <h2 className="text-xl font-black text-yellow-800">
-                  Cartes cadeaux expirant bientôt ({expiringSoon.length})
+                  Cartes cadeaux à relancer ({expiringSoon.length})
                 </h2>
               </div>
               <p className="text-sm text-yellow-700 mb-4">
-                Ces cartes cadeaux expirent dans moins de 3 mois. Envoyez une
-                relance pour rappeler aux clients de les utiliser.
+                Ces cartes expirent bientôt. Envoyez une relance pour rappeler
+                aux clients de les utiliser — elles disparaîtront ensuite de
+                cette liste.
               </p>
               <div className="space-y-3">
                 {expiringSoon.map((card) => {
@@ -520,30 +575,19 @@ function GiftCards() {
                             {card.service} • Code: {card.codeCarteCadeau}
                           </p>
                           <p className="text-xs text-yellow-700 mt-1">
-                            ⏰ Expire le {expirationFormatted} (
+                            Expire le {expirationFormatted} (
                             {card.daysUntilExpiration} jour
                             {card.daysUntilExpiration > 1 ? "s" : ""} restant
                             {card.daysUntilExpiration > 1 ? "s" : ""})
                           </p>
-                          {card.relanceEnvoyee && (
-                            <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                              <CheckCircleIcon className="w-3 h-3" />
-                              Relance envoyée le{" "}
-                              {new Date(card.dateRelance).toLocaleDateString(
-                                "fr-FR"
-                              )}
-                            </p>
-                          )}
                         </div>
-                        {!card.relanceEnvoyee && (
-                          <button
-                            onClick={() => sendReminder(card._id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg font-semibold hover:bg-yellow-600 transition-colors text-sm whitespace-nowrap"
-                          >
-                            <EnvelopeIcon className="w-4 h-4" />
-                            Envoyer relance
-                          </button>
-                        )}
+                        <button
+                          onClick={() => sendReminder(card._id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg font-semibold hover:bg-yellow-600 transition-colors text-sm whitespace-nowrap"
+                        >
+                          <EnvelopeIcon className="w-4 h-4" />
+                          Envoyer relance
+                        </button>
                       </div>
                     </div>
                   );
@@ -551,6 +595,91 @@ function GiftCards() {
               </div>
             </div>
           )}
+
+          {/* Archive des relances déjà envoyées — toujours visible */}
+          <div className="mb-6 rounded-xl border-2 border-emerald-200 bg-emerald-50 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowRemindedArchive((v) => !v)}
+              className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-emerald-100/60 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <CheckCircleIcon className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                <div>
+                  <p className="text-lg font-black text-emerald-900">
+                    Relances déjà envoyées ({remindedArchive.length})
+                  </p>
+                  <p className="text-sm text-emerald-800/80">
+                    Ici tu retrouves les cartes après avoir fait la relance
+                  </p>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-emerald-800 px-3 py-1.5 rounded-lg bg-white/80 border border-emerald-200">
+                {showRemindedArchive ? "Masquer" : "Afficher"}
+              </span>
+            </button>
+
+            {showRemindedArchive && (
+              <div className="border-t border-emerald-200 px-5 pb-5 pt-4 space-y-3 bg-white/50">
+                {remindedArchive.length === 0 ? (
+                  <p className="text-sm text-emerald-800/70 py-2">
+                    Aucune relance envoyée pour le moment. Dès qu&apos;une
+                    relance est faite, la carte apparaît ici.
+                  </p>
+                ) : (
+                  remindedArchive.map((card) => {
+                    const expirationDate = card.expirationDate
+                      ? new Date(card.expirationDate)
+                      : null;
+                    const expirationFormatted = expirationDate
+                      ? expirationDate.toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
+                      : null;
+
+                    return (
+                      <div
+                        key={card._id}
+                        className="rounded-lg border border-emerald-100 bg-white p-4 shadow-sm"
+                      >
+                        <p className="font-semibold text-gray-800">
+                          {card.prenom} {card.nom}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {card.service}
+                          {card.codeCarteCadeau
+                            ? ` • Code: ${card.codeCarteCadeau}`
+                            : ""}
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+                          {card.dateRelance && (
+                            <span className="text-emerald-700 font-medium">
+                              Relance le{" "}
+                              {new Date(card.dateRelance).toLocaleDateString(
+                                "fr-FR"
+                              )}
+                            </span>
+                          )}
+                          {expirationFormatted && (
+                            <span>
+                              Expire le {expirationFormatted}
+                              {typeof card.daysUntilExpiration === "number"
+                                ? card.daysUntilExpiration >= 0
+                                  ? ` (${card.daysUntilExpiration} j restants)`
+                                  : " (expirée)"
+                                : ""}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {isLoading ? (
@@ -599,6 +728,11 @@ function GiftCards() {
                         {giftCard.carteCadeauEnvoyee && (
                           <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-blue-100 text-blue-800 border-blue-200">
                             Carte envoyée
+                          </span>
+                        )}
+                        {giftCard.relanceEnvoyee && !giftCard.carteCadeauUtilisee && (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-emerald-100 text-emerald-800 border-emerald-200">
+                            Relance envoyée
                           </span>
                         )}
                         {giftCard.carteCadeauUtilisee && (
@@ -672,6 +806,14 @@ function GiftCards() {
                         <span>Carte utilisée</span>
                       </div>
                     )}
+                    <button
+                      onClick={() => deleteGiftCard(giftCard._id)}
+                      className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-red-200 bg-red-50 text-red-700 font-semibold hover:bg-red-100 transition-all duration-300 text-sm sm:text-base"
+                      title="Supprimer la carte cadeau"
+                    >
+                      <TrashIcon className="w-5 h-5" />
+                      <span className="sm:inline">Supprimer</span>
+                    </button>
                   </div>
                 </div>
               </div>

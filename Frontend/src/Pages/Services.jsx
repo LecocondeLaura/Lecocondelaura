@@ -1,49 +1,54 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import ServicesPreview from "../Components/UI/ServicesPreview";
+
 function Services() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fef5f5] via-white to-[#fef5f5] pt-24 pb-20 px-4 sm:px-6 lg:px-8 mt-10">
-      <div className="max-w-5xl xl:max-w-[1000px] mx-auto">
-        <div className="text-center mb-20 relative">
-          <div className="absolute inset-0 flex items-center justify-center opacity-5">
-            <h1 className="text-9xl font-black text-[#f0cfcf]">HEAD SPA</h1>
-          </div>
-          <div className="relative z-10">
-            <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-[#8b6f6f] mb-6 leading-tight">
-              Head Spa
-              <br />
-              <span className="text-5xl sm:text-6xl md:text-7xl text-[#f0cfcf]">
-                Japonais
-              </span>
-            </h1>
-            <div className="w-24 h-1.5 bg-gradient-to-r from-[#f0cfcf] to-[#e0bfbf] mx-auto mb-8 rounded-full"></div>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Découvrez l'art du head spa japonais, un rituel de bien-être
-              unique impliquant le cuir chevelu pour une détente totale.
+    <div className="relative min-h-screen bg-[#faf6f4] pt-28 pb-20 sm:pb-24">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[280px] opacity-60 sm:h-[360px]"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(248,213,218,0.5), transparent 70%)",
+        }}
+        aria-hidden
+      />
+
+      <div className="relative z-10 mx-auto w-full max-w-[1700px] px-4 sm:px-5 lg:px-6 xl:px-8">
+        <header className="mb-10 text-center sm:mb-12">
+          <p className="mb-3 font-display text-sm tracking-[0.25em] text-[#c97886] uppercase">
+            Les rituels
+          </p>
+          <h1 className="font-display text-3xl font-medium text-[#6e5656] sm:text-4xl md:text-5xl lg:text-6xl">
+            Head Spa japonais
+          </h1>
+          <div className="mx-auto mt-5 h-px w-16 bg-[#e8a8b2]/80" />
+          <p className="mx-auto mt-5 max-w-2xl font-body text-base leading-relaxed text-[#6e5656]/65 sm:text-lg">
+            Quatre rituels autour du cuir chevelu — du soin découverte au rituel
+            ultime — pour une détente profonde, à votre rythme.
+          </p>
+        </header>
+
+        <ServicesPreview showDiscoverButton={false} hideHeader />
+
+        <div className="relative z-10 mx-auto mt-14 max-w-3xl rounded-[2rem] sm:mt-16">
+          <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-[#6e5656] via-[#5a4343] to-[#c97886]/70" />
+          <div className="relative px-6 py-12 text-center text-white sm:px-12 sm:py-14">
+            <p className="mb-2 font-display text-sm tracking-[0.2em] text-[#f8d5da] uppercase">
+              Réservation
             </p>
-          </div>
-        </div>
-
-        <ServicesPreview showDiscoverButton={false} />
-
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#f0cfcf] via-[#e0bfbf] to-[#f0cfcf] rounded-3xl transform rotate-1"></div>
-          <div className="relative bg-gradient-to-r from-[#f0cfcf] to-[#e0bfbf] rounded-3xl p-12 shadow-2xl">
-            <div className="text-center">
-              <h2 className="text-4xl sm:text-5xl font-black text-white mb-4">
-                Prêt pour votre moment de détente ?
-              </h2>
-              <p className="text-white/90 mb-8 text-lg max-w-2xl mx-auto">
-                Réservez dès maintenant votre séance de head spa et offrez-vous
-                un moment de bien-être unique.
-              </p>
-              <a
-                href="/contact"
-                className="inline-block bg-white text-[#8b6f6f] px-10 py-4 rounded-full font-bold text-lg hover:bg-gray-50 hover:scale-105 hover:shadow-2xl transition-all duration-300 shadow-lg"
-              >
-                Réserver maintenant
-              </a>
-            </div>
+            <h2 className="font-display text-2xl font-medium sm:text-3xl md:text-4xl">
+              Offrez-vous un moment de douceur
+            </h2>
+            <p className="mx-auto mt-4 max-w-md font-body text-sm text-white/70 sm:text-base">
+              Choisissez votre soin et réservez en quelques minutes.
+            </p>
+            <Link
+              to="/contact"
+              className="mt-8 inline-flex rounded-full bg-white px-8 py-3.5 font-body text-sm font-semibold tracking-wide text-[#6e5656] shadow-lg transition-all hover:scale-105"
+            >
+              Réserver maintenant
+            </Link>
           </div>
         </div>
       </div>

@@ -11,6 +11,7 @@ import {
   XCircleIcon,
   ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/outline";
+import API_BASE_URL from "../../config/api.config.js";
 
 function AppointmentModal({
   appointment,
@@ -26,6 +27,8 @@ function AppointmentModal({
   const [rescheduleTime, setRescheduleTime] = useState("");
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [giftCardCode, setGiftCardCode] = useState("");
+  const [availableGiftCards, setAvailableGiftCards] = useState([]);
+  const [loadingGiftCards, setLoadingGiftCards] = useState(false);
   const allTimes = ["09:00", "11:00", "14:00", "16:00", "18:00"];
 
   useEffect(() => {
@@ -36,6 +39,44 @@ function AppointmentModal({
   useEffect(() => {
     setGiftCardCode(appointment?.codeCarteCadeau || "");
   }, [appointment?._id, appointment?.codeCarteCadeau]);
+
+  useEffect(() => {
+    if (
+      !appointment ||
+      appointment.carteCadeaux ||
+      appointment.moyenPaiement !== "carte_cadeaux"
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    const loadAvailableGiftCards = async () => {
+      try {
+        setLoadingGiftCards(true);
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `${API_BASE_URL}/appointments/gift-cards/available`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = await response.json();
+        if (!cancelled && data.success) {
+          setAvailableGiftCards(data.data || []);
+        }
+      } catch (error) {
+        console.error("Erreur chargement cartes cadeaux:", error);
+      } finally {
+        if (!cancelled) setLoadingGiftCards(false);
+      }
+    };
+
+    loadAvailableGiftCards();
+    return () => {
+      cancelled = true;
+    };
+  }, [appointment?._id, appointment?.moyenPaiement, appointment?.carteCadeaux]);
+
   if (!appointment) return null;
 
   // Vérifier si le rendez-vous a eu lieu il y a au moins 1 jour
@@ -218,22 +259,50 @@ function AppointmentModal({
                       <label className="text-sm font-semibold text-gray-700">
                         N° carte cadeau
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={giftCardCode}
-                        onChange={(e) => setGiftCardCode(e.target.value)}
-                        onBlur={() =>
-                          onUpdateCodeCarteCadeau &&
-                          onUpdateCodeCarteCadeau(
-                            appointment._id,
-                            giftCardCode.trim() || null
-                          )
-                        }
-                        placeholder="Ex : CC-ABC123"
-                        className="w-full max-w-xs px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 font-mono focus:ring-2 focus:ring-[#f0cfcf] focus:border-[#f0cfcf]"
-                      />
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setGiftCardCode(value);
+                          if (onUpdateCodeCarteCadeau) {
+                            onUpdateCodeCarteCadeau(
+                              appointment._id,
+                              value || null
+                            );
+                          }
+                        }}
+                        className="w-full max-w-md px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 focus:ring-2 focus:ring-[#f0cfcf] focus:border-[#f0cfcf]"
+                      >
+                        <option value="">
+                          {loadingGiftCards
+                            ? "Chargement des cartes…"
+                            : "Sélectionner une carte cadeau"}
+                        </option>
+                        {/* Garder le code déjà enregistré même s'il n'est plus dans la liste (déjà utilisée) */}
+                        {giftCardCode &&
+                          !availableGiftCards.some(
+                            (c) => c.codeCarteCadeau === giftCardCode
+                          ) && (
+                            <option value={giftCardCode}>
+                              {giftCardCode} (déjà sélectionnée)
+                            </option>
+                          )}
+                        {availableGiftCards.map((card) => (
+                          <option
+                            key={card._id}
+                            value={card.codeCarteCadeau}
+                          >
+                            {card.codeCarteCadeau}
+                            {" — "}
+                            {card.prenom} {card.nom}
+                            {card.service ? ` — ${card.service}` : ""}
+                          </option>
+                        ))}
+                      </select>
                       <span className="text-xs text-gray-500">
-                        Modifiez puis cliquez ailleurs pour enregistrer.
+                        {availableGiftCards.length === 0 && !loadingGiftCards
+                          ? "Aucune carte cadeau disponible (envoyée et non utilisée)."
+                          : "Choisis le code dans la liste — la carte sera marquée comme utilisée."}
                       </span>
                     </div>
                   )}
@@ -407,13 +476,13 @@ function AppointmentModal({
                   onClick={() => {
                     if (
                       window.confirm(
-                        "Envoyer un email de suivi au client pour lui demander son avis ?"
+                        "Envoyer un email de suivi au client ?"
                       )
                     ) {
                       onSendFollowUp(appointment._id);
                     }
                   }}
-                  className="flex items-center gap-2 px-6 py-3 bg-purple-500 text-white rounded-xl font-semibold hover:bg-purple-600 transition-colors"
+                  className="flex items-center gap-2 px-6 py-3 bg-taupe text-white rounded-xl font-semibold hover:bg-ink transition-colors"
                 >
                   <ChatBubbleLeftRightIcon className="w-5 h-5" />
                   Envoyer suivi

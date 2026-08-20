@@ -197,7 +197,11 @@ function Agenda() {
 
       const data = await response.json();
       if (data.success) {
-        showSuccess("Moyen de paiement mis à jour");
+        showSuccess(
+          data.giftCardMarked
+            ? data.message
+            : "Moyen de paiement mis à jour"
+        );
         if (selectedAppointment && selectedAppointment._id === appointmentId) {
           setSelectedAppointment({
             ...selectedAppointment,
@@ -244,7 +248,11 @@ function Agenda() {
 
       const data = await response.json();
       if (data.success) {
-        showSuccess("Code carte cadeau mis à jour");
+        showSuccess(
+          data.giftCardMarked
+            ? data.message
+            : "Code carte cadeau mis à jour"
+        );
         if (selectedAppointment && selectedAppointment._id === appointmentId) {
           setSelectedAppointment({
             ...selectedAppointment,
