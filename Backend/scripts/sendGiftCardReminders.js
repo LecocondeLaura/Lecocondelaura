@@ -30,6 +30,7 @@ const sendReminders = async () => {
     const giftCards = await Appointment.find({
       carteCadeaux: true,
       carteCadeauEnvoyee: true,
+      carteCadeauUtilisee: { $ne: true },
       relanceEnvoyee: false,
     });
 

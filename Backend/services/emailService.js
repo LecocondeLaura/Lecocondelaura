@@ -1,6 +1,8 @@
-// Prix des soins (aligné avec Frontend/src/Data/Service.json) — Kodomo 70€, Rituel Détente 120€, Rituel Ultime 140€
+// Prix des soins (aligné avec Frontend/src/Data/Service.json)
 export const getPriceForService = (serviceName) => {
   if (!serviceName) return null;
+  if (serviceName.includes("Découverte") || serviceName.includes("Decouverte"))
+    return 50;
   if (serviceName.includes("Kodomo")) return 70;
   if (serviceName.includes("Rituel Détente")) return 120;
   if (serviceName.includes("Rituel Ultime")) return 140;
@@ -72,13 +74,10 @@ const createTransporter = () => {
 // Générer l'URL Google Calendar pour ajouter un événement
 const generateGoogleCalendarUrl = (appointment) => {
   // Durées des services en minutes
-  const serviceDurations = {
-    "Head Spa Classique": 60,
-    "Head Spa Premium": 90,
-    "Head Spa Détente": 45,
-  };
-
-  const duration = serviceDurations[appointment.service] || 60;
+  let duration = 60;
+  if (appointment.service?.includes("30min")) duration = 30;
+  else if (appointment.service?.includes("90min")) duration = 90;
+  else if (appointment.service?.includes("60min")) duration = 60;
 
   // Créer la date de début
   const [hours, minutes] = appointment.heure.split(":");
@@ -1752,14 +1751,14 @@ export const sendFollowUpEmail = async (appointment) => {
                 <p><span class="label">🕐 Heure :</span> ${appointment.heure}</p>
               </div>
 
-              <p>Votre avis compte beaucoup pour nous ! Si vous souhaitez partager votre expérience, n'hésitez pas à laisser un avis sur notre site.</p>
-              
+              <p>Merci de votre confiance. Nous serions ravis de vous accueillir à nouveau pour un prochain moment de détente.</p>
+
               <div class="cta-box">
                 <p style="margin: 0 0 15px 0; color: #8b6f6f; font-weight: bold; font-size: 18px;">
-                  Partagez votre expérience
+                  Envie de revenir ?
                 </p>
-                <a href="${siteUrl}" class="cta-button" style="color: #ffffff !important; text-decoration: none;">
-                  Laisser un avis
+                <a href="${siteUrl}/contact" class="cta-button" style="color: #ffffff !important; text-decoration: none;">
+                  Réserver un soin
                 </a>
               </div>
 
@@ -1792,9 +1791,9 @@ Service : ${appointment.service}
 Date : ${sessionDateFormatted}
 Heure : ${appointment.heure}
 
-Votre avis compte beaucoup pour nous ! Si vous souhaitez partager votre expérience, n'hésitez pas à laisser un avis sur notre site.
+Merci de votre confiance. Nous serions ravis de vous accueillir à nouveau.
 
-Lien pour laisser un avis : ${siteUrl}
+Réserver : ${siteUrl}/contact
 
 Si vous avez des questions ou des commentaires :
 Téléphone : 07 87 98 43 41
