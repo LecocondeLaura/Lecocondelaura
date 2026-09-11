@@ -119,7 +119,7 @@ appointmentSchema.index({ date: 1, heure: 1, status: 1 });
 // Fonction pour obtenir la durée du soin en minutes
 const getServiceDuration = (serviceName) => {
   if (!serviceName) return 60;
-  if (serviceName.includes("45min")) return 45;
+  if (serviceName.includes("30min")) return 30;
   if (serviceName.includes("60min")) return 60;
   if (serviceName.includes("90min")) return 90;
   return 60; // Par défaut
@@ -140,8 +140,11 @@ const getBlockedSlots = (startTime, serviceName) => {
   const startMinutes = timeToMinutes(startTime);
   let blockedMinutes;
   
-  if (duration === 45 || duration === 60) {
-    // Pour 45min ou 1h → bloquer 1h30 (90 minutes)
+  if (duration === 30) {
+    // Pour 30min → bloquer 1h (60 minutes)
+    blockedMinutes = startMinutes + 60;
+  } else if (duration === 60) {
+    // Pour 1h → bloquer 1h30 (90 minutes)
     blockedMinutes = startMinutes + 90;
   } else if (duration === 90) {
     // Pour 1h30 → bloquer 2h (120 minutes)

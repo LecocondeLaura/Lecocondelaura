@@ -31,6 +31,12 @@ const closureSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    /** Origine : congés salon vs Head Spa Mobile (couleur agenda) */
+    kind: {
+      type: String,
+      enum: ["closure", "head_spa_mobile"],
+      default: "closure",
+    },
   },
   { timestamps: true }
 );
@@ -57,6 +63,12 @@ closureSchema.pre("save", function (next) {
 });
 
 closureSchema.statics.getBlockedSlotTimesForDate = async function (dateInput) {
+  const info = await this.getBlockInfoForDate(dateInput);
+  return info.blocked;
+};
+
+/** Infos de blocage pour une date (créneaux + raison Head Spa Mobile) */
+closureSchema.statics.getBlockInfoForDate = async function (dateInput) {
   const dateStr =
     typeof dateInput === "string"
       ? dateInput.split("T")[0]
@@ -64,10 +76,13 @@ closureSchema.statics.getBlockedSlotTimesForDate = async function (dateInput) {
 
   const closures = await this.find({}).lean();
   const blocked = new Set();
+  const matching = [];
+
   for (const c of closures) {
     const startStr = new Date(c.startDate).toISOString().split("T")[0];
     const endStr = new Date(c.endDate).toISOString().split("T")[0];
     if (dateStr >= startStr && dateStr <= endStr) {
+      matching.push(c);
       const scope = c.timeScope || "full";
       let slots;
       if (scope === "custom") {
@@ -80,7 +95,17 @@ closureSchema.statics.getBlockedSlotTimesForDate = async function (dateInput) {
       slots.forEach((t) => blocked.add(t));
     }
   }
-  return blocked;
+
+  const hasHsm = matching.some((c) => c.kind === "head_spa_mobile");
+  const hasOther = matching.some((c) => c.kind !== "head_spa_mobile");
+  const allSlotsBlocked = ALL_SLOT_TIMES.every((t) => blocked.has(t));
+
+  return {
+    blocked,
+    hasHeadSpaMobile: hasHsm,
+    /** Journée entière bloquée uniquement par Head Spa Mobile */
+    isHeadSpaMobileDay: allSlotsBlocked && hasHsm && !hasOther,
+  };
 };
 
 const Closure = mongoose.model("Closure", closureSchema);

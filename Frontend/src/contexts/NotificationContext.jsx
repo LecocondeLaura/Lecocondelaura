@@ -15,9 +15,9 @@ export const useNotifications = () => {
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState({
-    reviews: 0,
     appointments: 0,
     giftCards: 0,
+    mobileQuotes: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -25,7 +25,7 @@ export const NotificationProvider = ({ children }) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        setNotifications({ reviews: 0, appointments: 0, giftCards: 0 });
+        setNotifications({ appointments: 0, giftCards: 0, mobileQuotes: 0 });
         setIsLoading(false);
         return;
       }
@@ -39,9 +39,9 @@ export const NotificationProvider = ({ children }) => {
       const data = await response.json();
       if (data.success) {
         setNotifications({
-          reviews: data.data.reviews || 0,
           appointments: data.data.appointments || 0,
           giftCards: data.data.giftCards || 0,
+          mobileQuotes: data.data.mobileQuotes || 0,
         });
       }
     } catch (error) {
@@ -53,7 +53,6 @@ export const NotificationProvider = ({ children }) => {
 
   useEffect(() => {
     fetchNotifications();
-    // Rafraîchir les notifications toutes les 30 secondes
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -70,4 +69,3 @@ export const NotificationProvider = ({ children }) => {
     </NotificationContext.Provider>
   );
 };
-

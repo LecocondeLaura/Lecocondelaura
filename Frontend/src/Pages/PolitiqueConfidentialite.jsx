@@ -64,14 +64,15 @@ function PolitiqueConfidentialite() {
             </h2>
             <p className="text-gray-700 leading-relaxed mb-3">
               Nous collectons les données personnelles suivantes lorsque vous
-              utilisez notre site ou prenez rendez-vous :
+              utilisez notre site, prenez rendez-vous ou demandez un devis Head
+              Spa Mobile :
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
               <li>
                 <strong className="text-[#8b6f6f]">
-                  Données d'identification :
+                  Données d&apos;identification :
                 </strong>{" "}
-                nom, prénom
+                nom, prénom (ou nom du contact)
               </li>
               <li>
                 <strong className="text-[#8b6f6f]">Données de contact :</strong>{" "}
@@ -79,10 +80,18 @@ function PolitiqueConfidentialite() {
               </li>
               <li>
                 <strong className="text-[#8b6f6f]">
-                  Données de réservation :
+                  Données de réservation (salon) :
                 </strong>{" "}
                 service souhaité, date et heure du rendez-vous, message
                 optionnel
+              </li>
+              <li>
+                <strong className="text-[#8b6f6f]">
+                  Données de devis Head Spa Mobile :
+                </strong>{" "}
+                nom de l&apos;établissement, type (entreprise, hôtel &amp; spa,
+                EHPAD), lieu d&apos;intervention, nombre de personnes
+                concernées, message / précisions
               </li>
               <li>
                 <strong className="text-[#8b6f6f]">Données techniques :</strong>{" "}
@@ -101,8 +110,12 @@ function PolitiqueConfidentialite() {
               finalités suivantes :
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-              <li>Gestion des réservations et prise de rendez-vous</li>
+              <li>Gestion des réservations et prise de rendez-vous en salon</li>
               <li>Confirmation et rappel de vos rendez-vous</li>
+              <li>
+                Traitement des demandes de devis Head Spa Mobile et suivi
+                commercial associé (devis, acompte, intervention)
+              </li>
               <li>Communication avec vous concernant nos services</li>
               <li>Amélioration de nos services et de votre expérience</li>
               <li>Respect de nos obligations légales et réglementaires</li>
@@ -120,17 +133,18 @@ function PolitiqueConfidentialite() {
             <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
               <li>
                 <strong className="text-[#8b6f6f]">Votre consentement :</strong>{" "}
-                lorsque vous remplissez le formulaire de réservation
+                lorsque vous remplissez un formulaire (réservation ou devis)
               </li>
               <li>
                 <strong className="text-[#8b6f6f]">
-                  L'exécution d'un contrat :
+                  L&apos;exécution d&apos;un contrat :
                 </strong>{" "}
-                pour la gestion de votre réservation
+                pour la gestion de votre réservation ou de votre demande de
+                devis / prestation Head Spa Mobile
               </li>
               <li>
-                <strong className="text-[#8b6f6f]">L'intérêt légitime :</strong>{" "}
-                pour l'amélioration de nos services
+                <strong className="text-[#8b6f6f]">L&apos;intérêt légitime :</strong>{" "}
+                pour l&apos;amélioration de nos services
               </li>
               <li>
                 <strong className="text-[#8b6f6f]">
@@ -157,6 +171,13 @@ function PolitiqueConfidentialite() {
                 3 ans à compter de la dernière interaction
               </li>
               <li>
+                <strong className="text-[#8b6f6f]">
+                  Demandes de devis Head Spa Mobile :
+                </strong>{" "}
+                3 ans à compter de la dernière interaction (ou durée légale si
+                une prestation / facturation a suivi)
+              </li>
+              <li>
                 <strong className="text-[#8b6f6f]">Données de contact :</strong>{" "}
                 3 ans à compter de la dernière utilisation
               </li>
@@ -180,11 +201,11 @@ function PolitiqueConfidentialite() {
             <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
               <li>Le personnel autorisé du salon Le cocon de Laura</li>
               <li>
-                Nos prestataires techniques (hébergeur, service d'emailing) dans
-                le cadre de l'exécution de leurs missions
+                Nos prestataires techniques (hébergement, envoi d&apos;emails)
+                dans le cadre de l&apos;exécution de leurs missions
               </li>
               <li>
-                Les autorités compétentes si la loi l'exige ou en cas de
+                Les autorités compétentes si la loi l&apos;exige ou en cas de
                 réquisition judiciaire
               </li>
             </ul>
@@ -349,7 +370,7 @@ function PolitiqueConfidentialite() {
 
           <div className="pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500 italic">
-              Dernière mise à jour : {new Date().toLocaleDateString("fr-FR")}
+              Dernière mise à jour : 11 septembre 2026
             </p>
           </div>
         </div>

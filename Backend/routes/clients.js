@@ -247,4 +247,43 @@ router.put("/:id", authenticateToken, async (req, res) => {
   }
 });
 
+// DELETE - Supprimer un client et ses rendez-vous / cartes cadeaux liés
+router.delete("/:email", authenticateToken, async (req, res) => {
+  try {
+    const email = decodeURIComponent(req.params.email).toLowerCase().trim();
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email requis",
+      });
+    }
+
+    const deletedAppointments = await Appointment.deleteMany({ email });
+    const deletedClient = await Client.findOneAndDelete({ email });
+
+    if (!deletedClient && deletedAppointments.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Client non trouvé",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Client et historique associés supprimés",
+      data: {
+        appointmentsDeleted: deletedAppointments.deletedCount,
+        clientDeleted: !!deletedClient,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la suppression du client",
+      error: error.message,
+    });
+  }
+});
+
 export default router;

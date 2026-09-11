@@ -2,138 +2,184 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   HomeIcon,
-  ChatBubbleLeftRightIcon,
   UserGroupIcon,
   GiftIcon,
   CalendarIcon,
   CalendarDaysIcon,
   ArrowLeftOnRectangleIcon,
   XMarkIcon,
+  BanknotesIcon,
+  TruckIcon,
+  CameraIcon,
+  StarIcon,
 } from "@heroicons/react/24/outline";
 import { useNotifications } from "../../contexts/NotificationContext";
+
+const MENU_SECTIONS = [
+  {
+    title: null,
+    items: [
+      {
+        name: "Tableau de bord",
+        path: "/dashboard",
+        icon: HomeIcon,
+        notificationKey: null,
+      },
+    ],
+  },
+  {
+    title: "Salon",
+    items: [
+      {
+        name: "Agenda",
+        path: "/dashboard/agenda",
+        icon: CalendarIcon,
+        notificationKey: "appointments",
+      },
+      {
+        name: "Congés",
+        path: "/dashboard/conges",
+        icon: CalendarDaysIcon,
+        notificationKey: null,
+      },
+      {
+        name: "Suivi clients",
+        path: "/dashboard/clients",
+        icon: UserGroupIcon,
+        notificationKey: null,
+      },
+    ],
+  },
+  {
+    title: "Commercial",
+    items: [
+      {
+        name: "Cartes cadeaux",
+        path: "/dashboard/cartes-cadeaux",
+        icon: GiftIcon,
+        notificationKey: "giftCards",
+      },
+      {
+        name: "Head Spa Mobile",
+        path: "/dashboard/head-spa-mobile",
+        icon: TruckIcon,
+        notificationKey: "mobileQuotes",
+      },
+      {
+        name: "Comptes",
+        path: "/dashboard/comptes",
+        icon: BanknotesIcon,
+        notificationKey: null,
+      },
+    ],
+  },
+  {
+    title: "Site web",
+    items: [
+      {
+        name: "Instagram",
+        path: "/dashboard/instagram",
+        icon: CameraIcon,
+        notificationKey: null,
+      },
+      {
+        name: "Avis Google",
+        path: "/dashboard/avis-google",
+        icon: StarIcon,
+        notificationKey: null,
+      },
+    ],
+  },
+];
 
 function Sidebar({ onLogout, onClose }) {
   const location = useLocation();
   const { notifications } = useNotifications();
 
   const handleLinkClick = () => {
-    if (onClose) {
-      onClose();
-    }
+    if (onClose) onClose();
   };
-
-  const menuItems = [
-    {
-      name: "Tableau de bord",
-      path: "/dashboard",
-      icon: HomeIcon,
-      notificationKey: null,
-    },
-    {
-      name: "Agenda",
-      path: "/dashboard/agenda",
-      icon: CalendarIcon,
-      notificationKey: "appointments",
-    },
-    {
-      name: "Avis clients",
-      path: "/dashboard/avis-clients",
-      icon: ChatBubbleLeftRightIcon,
-      notificationKey: "reviews",
-    },
-    {
-      name: "Cartes cadeaux",
-      path: "/dashboard/cartes-cadeaux",
-      icon: GiftIcon,
-      notificationKey: "giftCards",
-    },
-    {
-      name: "Suivi clients",
-      path: "/dashboard/clients",
-      icon: UserGroupIcon,
-      notificationKey: null,
-    },
-    {
-      name: "Congés",
-      path: "/dashboard/conges",
-      icon: CalendarDaysIcon,
-      notificationKey: null,
-    },
-  ];
 
   const isActive = (path) => {
     if (path === "/dashboard") {
       return location.pathname === "/dashboard";
     }
-    if (path === "/dashboard/agenda") {
-      return location.pathname === "/dashboard/agenda";
-    }
     return location.pathname.startsWith(path);
   };
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col shadow-lg md:shadow-none overflow-hidden">
-      {/* Logo/Header */}
-      <div className="p-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+    <div className="flex h-screen w-64 flex-col overflow-hidden border-r border-gray-200 bg-white shadow-lg md:shadow-none">
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 p-6">
         <div>
           <h1 className="text-2xl font-black text-[#8b6f6f]">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Le Cocon de Laura</p>
+          <p className="mt-1 text-sm text-gray-500">Le Cocon de Laura</p>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-            aria-label="Close menu"
+            className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 md:hidden"
+            aria-label="Fermer le menu"
           >
-            <XMarkIcon className="w-5 h-5" />
+            <XMarkIcon className="h-5 w-5" />
           </button>
         )}
       </div>
 
-      {/* Menu Items */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const notificationCount =
-            item.notificationKey && notifications[item.notificationKey]
-              ? notifications[item.notificationKey]
-              : 0;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={handleLinkClick}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative ${
-                isActive(item.path)
-                  ? "bg-[#8b6f6f] text-white shadow-lg"
-                  : "text-gray-700 hover:bg-[#f0cfcf]/30 hover:text-[#8b6f6f]"
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              <span className="font-semibold flex-1">{item.name}</span>
-              {notificationCount > 0 && (
-                <span
-                  className={`flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold ${
-                    isActive(item.path)
-                      ? "bg-white text-[#8b6f6f]"
-                      : "bg-red-500 text-white"
-                  }`}
-                >
-                  {notificationCount > 99 ? "99+" : notificationCount}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 space-y-5 overflow-y-auto p-4">
+        {MENU_SECTIONS.map((section, sectionIndex) => (
+          <div key={section.title || `section-${sectionIndex}`}>
+            {section.title && (
+              <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+                {section.title}
+              </p>
+            )}
+            <div className="space-y-1">
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const notificationCount =
+                  item.notificationKey && notifications[item.notificationKey]
+                    ? notifications[item.notificationKey]
+                    : 0;
+                const active = isActive(item.path);
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={handleLinkClick}
+                    className={`relative flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ${
+                      active
+                        ? "bg-[#8b6f6f] text-white shadow-lg"
+                        : "text-gray-700 hover:bg-[#f0cfcf]/30 hover:text-[#8b6f6f]"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="flex-1 font-semibold">{item.name}</span>
+                    {notificationCount > 0 && (
+                      <span
+                        className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+                          active
+                            ? "bg-white text-[#8b6f6f]"
+                            : "bg-red-500 text-white"
+                        }`}
+                      >
+                        {notificationCount > 99 ? "99+" : notificationCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      {/* Logout Button */}
-      <div className="p-4 border-t border-gray-200 flex-shrink-0">
+      <div className="flex-shrink-0 border-t border-gray-200 p-4">
         <button
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all duration-300 font-semibold"
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 font-semibold text-gray-700 transition-all duration-300 hover:bg-red-50 hover:text-red-600"
         >
-          <ArrowLeftOnRectangleIcon className="w-5 h-5" />
+          <ArrowLeftOnRectangleIcon className="h-5 w-5" />
           <span>Déconnexion</span>
         </button>
       </div>

@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import Appointment from "../models/Appointment.js";
+import MobileQuote from "../models/MobileQuote.js";
 import { authenticateToken } from "../middleware/auth.js";
 import {
   getPriceForService,
@@ -138,6 +139,7 @@ router.get("/stats/revenue", authenticateToken, async (req, res) => {
       massageMonth,
       giftCardsWeek,
       giftCardsMonth,
+      mobileQuotesPaid,
     ] = await Promise.all([
       Appointment.find({
         ...paidMassageFilter,
@@ -155,29 +157,81 @@ router.get("/stats/revenue", authenticateToken, async (req, res) => {
         ...paidGiftCardFilter,
         createdAt: { $gte: startOfMonth, $lte: endOfMonth },
       }).select("service"),
+      MobileQuote.find({
+        $or: [
+          { paiementEffectue: true, montant: { $gt: 0 } },
+          { acompteRecuAt: { $ne: null }, montantAcompte: { $gt: 0 } },
+        ],
+      }).select(
+        "montant montantAcompte acompteRecuAt paiementEffectue dateDebutMission dateFinMission joursIntervention"
+      ),
     ]);
 
     const sumRevenue = (list) =>
       list.reduce((acc, apt) => acc + (getPriceForService(apt.service) || 0), 0);
 
+    const mobileQuoteRevenueDate = (q) => {
+      if (Array.isArray(q.joursIntervention) && q.joursIntervention.length) {
+        return q.joursIntervention[q.joursIntervention.length - 1];
+      }
+      return q.dateFinMission || q.dateDebutMission || null;
+    };
+
+    const inRange = (date, start, end) => {
+      if (!date) return false;
+      const t = new Date(date).getTime();
+      return t >= start.getTime() && t <= end.getTime();
+    };
+
+    const mobileFinalAmount = (q) => {
+      const total = q.montant || 0;
+      if (!q.paiementEffectue || total <= 0) return 0;
+      const acompte =
+        q.acompteRecuAt && q.montantAcompte > 0 ? q.montantAcompte : 0;
+      return Math.max(0, total - acompte);
+    };
+
+    const sumMobileInRange = (start, end) =>
+      mobileQuotesPaid.reduce((acc, q) => {
+        let sum = 0;
+        if (
+          q.acompteRecuAt &&
+          q.montantAcompte > 0 &&
+          inRange(q.acompteRecuAt, start, end)
+        ) {
+          sum += q.montantAcompte;
+        }
+        const finalAmt = mobileFinalAmount(q);
+        if (finalAmt > 0 && inRange(mobileQuoteRevenueDate(q), start, end)) {
+          sum += finalAmt;
+        }
+        return acc + sum;
+      }, 0);
+
     const massageWeekRevenue = sumRevenue(massageWeek);
     const massageMonthRevenue = sumRevenue(massageMonth);
     const giftCardsWeekRevenue = sumRevenue(giftCardsWeek);
     const giftCardsMonthRevenue = sumRevenue(giftCardsMonth);
+    const mobileWeekRevenue = sumMobileInRange(startOfWeek, endOfWeek);
+    const mobileMonthRevenue = sumMobileInRange(startOfMonth, endOfMonth);
 
     res.json({
       success: true,
       data: {
         // Compatibilité avec l'UI existante
-        week: massageWeekRevenue,
-        month: massageMonthRevenue,
+        week: massageWeekRevenue + giftCardsWeekRevenue + mobileWeekRevenue,
+        month: massageMonthRevenue + giftCardsMonthRevenue + mobileMonthRevenue,
         // Détail par catégorie
         massageWeek: massageWeekRevenue,
         massageMonth: massageMonthRevenue,
         giftCardsWeek: giftCardsWeekRevenue,
         giftCardsMonth: giftCardsMonthRevenue,
-        totalWeek: massageWeekRevenue + giftCardsWeekRevenue,
-        totalMonth: massageMonthRevenue + giftCardsMonthRevenue,
+        mobileWeek: mobileWeekRevenue,
+        mobileMonth: mobileMonthRevenue,
+        totalWeek:
+          massageWeekRevenue + giftCardsWeekRevenue + mobileWeekRevenue,
+        totalMonth:
+          massageMonthRevenue + giftCardsMonthRevenue + mobileMonthRevenue,
         weekStart: startOfWeek.toISOString().slice(0, 10),
         weekEnd: endOfWeek.toISOString().slice(0, 10),
         monthLabel: `${year}-${String(month + 1).padStart(2, "0")}`,
@@ -204,7 +258,8 @@ router.get("/available/:date", async (req, res) => {
       "18:00",
     ];
 
-    const closureBlocked = await Closure.getBlockedSlotTimesForDate(date);
+    const blockInfo = await Closure.getBlockInfoForDate(date);
+    const closureBlocked = blockInfo.blocked;
     const closureBlockedTimes = [...closureBlocked];
     const timesAfterClosures = allTimes.filter((t) => !closureBlocked.has(t));
 
@@ -217,6 +272,7 @@ router.get("/available/:date", async (req, res) => {
           reservedTimes: [],
           reservedAppointments: [],
           isClosed: true,
+          isHeadSpaMobile: blockInfo.isHeadSpaMobileDay === true,
           closureBlockedTimes,
         },
       });
@@ -246,6 +302,7 @@ router.get("/available/:date", async (req, res) => {
         reservedTimes: reservedTimes,
         reservedAppointments: reservedAppointments,
         isClosed: false,
+        isHeadSpaMobile: false,
         closureBlockedTimes,
       },
     });
@@ -595,10 +652,38 @@ router.patch("/:id/paiement", authenticateToken, async (req, res) => {
       });
     }
 
+    // Si le RDV est payé en carte cadeau avec un code → marquer la carte source comme utilisée
+    let giftCardMarked = null;
+    const paymentIsGiftCard =
+      appointment.moyenPaiement === "carte_cadeaux" &&
+      !appointment.carteCadeaux;
+    const codeToMatch = (appointment.codeCarteCadeau || "").trim();
+
+    if (paymentIsGiftCard && codeToMatch) {
+      const codeRegex = new RegExp(
+        `^${codeToMatch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+        "i"
+      );
+      const giftCard = await Appointment.findOne({
+        carteCadeaux: true,
+        codeCarteCadeau: codeRegex,
+        _id: { $ne: appointment._id },
+      });
+
+      if (giftCard && !giftCard.carteCadeauUtilisee) {
+        giftCard.carteCadeauUtilisee = true;
+        await giftCard.save();
+        giftCardMarked = giftCard.codeCarteCadeau;
+      }
+    }
+
     res.json({
       success: true,
-      message: "Paiement mis à jour",
+      message: giftCardMarked
+        ? `Paiement mis à jour — carte ${giftCardMarked} marquée comme utilisée`
+        : "Paiement mis à jour",
       data: appointment,
+      giftCardMarked: !!giftCardMarked,
     });
   } catch (error) {
     res.status(500).json({
@@ -758,36 +843,30 @@ router.delete("/:id", authenticateToken, async (req, res) => {
       });
     }
 
-    // Ne pas supprimer les cartes cadeaux, seulement les rendez-vous
-    if (appointment.carteCadeaux) {
-      return res.status(400).json({
-        success: false,
-        message: "Les cartes cadeaux ne peuvent pas être supprimées",
+    // Emails d'annulation uniquement pour les vrais rendez-vous (pas les cartes cadeaux)
+    if (!appointment.carteCadeaux) {
+      sendCancellationEmail(appointment).catch((error) => {
+        console.error(
+          "Erreur lors de l'envoi de l'email d'annulation (non bloquant):",
+          error
+        );
+      });
+
+      sendCancellationNotification(appointment).catch((error) => {
+        console.error(
+          "Erreur lors de l'envoi de la notification d'annulation (non bloquant):",
+          error
+        );
       });
     }
 
-    // Envoyer l'email d'annulation au client
-    sendCancellationEmail(appointment).catch((error) => {
-      console.error(
-        "Erreur lors de l'envoi de l'email d'annulation (non bloquant):",
-        error
-      );
-    });
-
-    // Envoyer une notification d'annulation au propriétaire du salon
-    sendCancellationNotification(appointment).catch((error) => {
-      console.error(
-        "Erreur lors de l'envoi de la notification d'annulation (non bloquant):",
-        error
-      );
-    });
-
-    // Supprimer le rendez-vous
     await Appointment.findByIdAndDelete(req.params.id);
 
     res.json({
       success: true,
-      message: "Rendez-vous supprimé avec succès",
+      message: appointment.carteCadeaux
+        ? "Carte cadeau supprimée avec succès"
+        : "Rendez-vous supprimé avec succès",
     });
   } catch (error) {
     console.error("Erreur lors de la suppression du rendez-vous:", error);
@@ -799,40 +878,42 @@ router.delete("/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// GET - Récupérer les cartes cadeaux expirant bientôt (protégé)
+// GET - Cartes cadeaux disponibles (envoyées, non utilisées) pour l'agenda
+router.get("/gift-cards/available", authenticateToken, async (req, res) => {
+  try {
+    const cards = await Appointment.find({
+      carteCadeaux: true,
+      carteCadeauEnvoyee: true,
+      carteCadeauUtilisee: { $ne: true },
+      codeCarteCadeau: { $exists: true, $nin: [null, ""] },
+    })
+      .sort({ dateEnvoiCarte: -1, createdAt: -1 })
+      .select(
+        "prenom nom email service codeCarteCadeau dateEnvoiCarte createdAt"
+      );
+
+    res.json({ success: true, data: cards });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la récupération des cartes disponibles",
+      error: error.message,
+    });
+  }
+});
+
+// GET - Cartes cadeaux expirant bientôt + archive des relances déjà envoyées
 router.get("/gift-cards/expiring-soon", authenticateToken, async (req, res) => {
   try {
     const now = new Date();
-    const threeMonthsFromNow = new Date();
-    threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
-    const sixMonthsFromNow = new Date();
-    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
 
-    // Récupérer les cartes cadeaux envoyées qui approchent de l'expiration
-    // (entre 3 et 6 mois après l'envoi)
     const giftCards = await Appointment.find({
       carteCadeaux: true,
       carteCadeauEnvoyee: true,
+      carteCadeauUtilisee: { $ne: true },
     }).sort({ updatedAt: 1 });
 
-    // Filtrer celles qui sont entre 3 et 6 mois après l'envoi
-    const expiringSoon = giftCards.filter((card) => {
-      const cardSentDate =
-        card.dateEnvoiCarte ||
-        (card.carteCadeauEnvoyee ? card.updatedAt : null) ||
-        card.createdAt;
-      const expirationDate = new Date(cardSentDate);
-      expirationDate.setMonth(expirationDate.getMonth() + 6);
-
-      // Vérifier si on est entre 3 et 6 mois après l'envoi
-      const threeMonthsAfterSent = new Date(cardSentDate);
-      threeMonthsAfterSent.setMonth(threeMonthsAfterSent.getMonth() + 3);
-
-      return now >= threeMonthsAfterSent && now <= expirationDate;
-    });
-
-    // Ajouter les informations calculées
-    const cardsWithExpiration = expiringSoon.map((card) => {
+    const enrichCard = (card) => {
       const cardSentDate =
         card.dateEnvoiCarte ||
         (card.carteCadeauEnvoyee ? card.updatedAt : null) ||
@@ -849,11 +930,39 @@ router.get("/gift-cards/expiring-soon", authenticateToken, async (req, res) => {
         expirationDate,
         daysUntilExpiration,
       };
-    });
+    };
+
+    const isInExpiringWindow = (card) => {
+      const cardSentDate =
+        card.dateEnvoiCarte ||
+        (card.carteCadeauEnvoyee ? card.updatedAt : null) ||
+        card.createdAt;
+      const expirationDate = new Date(cardSentDate);
+      expirationDate.setMonth(expirationDate.getMonth() + 6);
+      const threeMonthsAfterSent = new Date(cardSentDate);
+      threeMonthsAfterSent.setMonth(threeMonthsAfterSent.getMonth() + 3);
+      return now >= threeMonthsAfterSent && now <= expirationDate;
+    };
+
+    // À traiter : dans la fenêtre d'expiration, sans relance encore
+    const pending = giftCards
+      .filter((card) => !card.relanceEnvoyee && isInExpiringWindow(card))
+      .map(enrichCard);
+
+    // Archive : relance déjà envoyée, carte pas encore utilisée
+    const reminded = giftCards
+      .filter((card) => card.relanceEnvoyee === true)
+      .map(enrichCard)
+      .sort((a, b) => {
+        const da = a.dateRelance ? new Date(a.dateRelance).getTime() : 0;
+        const db = b.dateRelance ? new Date(b.dateRelance).getTime() : 0;
+        return db - da;
+      });
 
     res.json({
       success: true,
-      data: cardsWithExpiration,
+      data: pending,
+      reminded,
     });
   } catch (error) {
     console.error(

@@ -7,6 +7,7 @@ import {
   GiftIcon,
 } from "@heroicons/react/24/outline";
 import API_BASE_URL from "../../config/api.config.js";
+import { BOOKING_SERVICES } from "../../Data/bookingServices.js";
 
 function CreateGiftCardModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -20,11 +21,7 @@ function CreateGiftCardModal({ isOpen, onClose, onSuccess }) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const services = [
-    "Head Spa Kodomo - 60min (enfant)",
-    "Head Spa Rituel Détente - 60min",
-    "Head Spa Rituel Ultime - 90min",
-  ];
+  const services = BOOKING_SERVICES;
 
   const handleChange = (e) => {
     const { name, value } = e.target;

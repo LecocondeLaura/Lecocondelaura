@@ -21,25 +21,35 @@ function toLocalDateKey(dateValue) {
   ).padStart(2, "0")}`;
 }
 
-function getBlockedSlotsForCalendarDay(year, month, day, closuresList) {
+function getClosuresForCalendarDay(year, month, day, closuresList) {
   const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
     day
   ).padStart(2, "0")}`;
+  return closuresList.filter(
+    (c) => dateStr >= c.startDate && dateStr <= c.endDate
+  );
+}
+
+function getBlockedSlotsForCalendarDay(year, month, day, closuresList) {
+  const dayClosures = getClosuresForCalendarDay(
+    year,
+    month,
+    day,
+    closuresList
+  );
   const blocked = new Set();
-  closuresList.forEach((c) => {
-    if (dateStr >= c.startDate && dateStr <= c.endDate) {
-      const scope = c.timeScope || "full";
-      if (scope === "morning")
-        CAL_MORNING.forEach((t) => blocked.add(t));
-      else if (scope === "afternoon")
-        CAL_AFTERNOON.forEach((t) => blocked.add(t));
-      else if (scope === "custom" && Array.isArray(c.blockedSlots))
-        c.blockedSlots
-          .filter((t) => ALL_CAL_SLOTS.includes(t))
-          .forEach((t) => blocked.add(t));
-      else if (scope === "full")
-        ALL_CAL_SLOTS.forEach((t) => blocked.add(t));
-    }
+  dayClosures.forEach((c) => {
+    const scope = c.timeScope || "full";
+    if (scope === "morning")
+      CAL_MORNING.forEach((t) => blocked.add(t));
+    else if (scope === "afternoon")
+      CAL_AFTERNOON.forEach((t) => blocked.add(t));
+    else if (scope === "custom" && Array.isArray(c.blockedSlots))
+      c.blockedSlots
+        .filter((t) => ALL_CAL_SLOTS.includes(t))
+        .forEach((t) => blocked.add(t));
+    else if (scope === "full")
+      ALL_CAL_SLOTS.forEach((t) => blocked.add(t));
   });
   return blocked;
 }
@@ -193,6 +203,18 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
 
             const dayAppointments = getAppointmentsForDate(day);
             const today = isToday(day);
+            const dayClosures = getClosuresForCalendarDay(
+              year,
+              month,
+              day,
+              closures
+            );
+            const hsmClosures = dayClosures.filter(
+              (c) => c.kind === "head_spa_mobile"
+            );
+            const otherClosures = dayClosures.filter(
+              (c) => c.kind !== "head_spa_mobile"
+            );
             const blockedSlots = getBlockedSlotsForCalendarDay(
               year,
               month,
@@ -204,8 +226,12 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
             );
             const partialBlocked =
               blockedSlots.size > 0 && !allDayBlocked;
+            const isHsmDay = hsmClosures.length > 0;
+            const isOtherClosureDay = otherClosures.length > 0 && !isHsmDay;
+
             let closureBadge = null;
-            if (allDayBlocked) closureBadge = "Fermé";
+            if (isHsmDay) closureBadge = "Mobile";
+            else if (allDayBlocked) closureBadge = "Fermé";
             else if (partialBlocked) {
               const mTaken = CAL_MORNING.every((t) => blockedSlots.has(t));
               const aTaken = CAL_AFTERNOON.every((t) =>
@@ -220,9 +246,11 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
               <div
                 key={day}
                 className={`min-h-32 p-2 rounded-lg border-2 transition-all ${
-                  allDayBlocked
+                  isHsmDay
+                    ? "bg-[#2a9d8f]/15 border-[#2a9d8f]/50"
+                    : isOtherClosureDay && allDayBlocked
                     ? "bg-gray-200 border-gray-300 opacity-80"
-                    : partialBlocked
+                    : partialBlocked && !isHsmDay
                     ? "bg-amber-50/80 border-amber-200"
                     : today
                     ? "bg-[#f0cfcf]/20 border-[#8b6f6f]"
@@ -232,7 +260,9 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
                 <div className="flex items-center justify-between mb-1">
                   <span
                     className={`text-sm font-bold ${
-                      allDayBlocked || partialBlocked
+                      isHsmDay
+                        ? "text-[#1d6f64]"
+                        : allDayBlocked || partialBlocked
                         ? "text-gray-600"
                         : today
                         ? "text-[#8b6f6f]"
@@ -244,7 +274,9 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
                   {closureBadge && (
                     <span
                       className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                        allDayBlocked
+                        isHsmDay
+                          ? "text-white bg-[#2a9d8f]"
+                          : allDayBlocked
                           ? "text-gray-600 bg-gray-300"
                           : "text-amber-900 bg-amber-200"
                       }`}
@@ -254,6 +286,17 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
                   )}
                 </div>
                 <div className="space-y-1 max-h-64 overflow-y-auto">
+                  {hsmClosures.map((c) => (
+                    <div
+                      key={c._id || `${c.startDate}-${c.label}`}
+                      className="bg-[#2a9d8f] text-white text-xs p-1.5 rounded"
+                      title={c.label || "Head Spa Mobile"}
+                    >
+                      <div className="font-semibold leading-snug line-clamp-3">
+                        {c.label || "Head Spa Mobile"}
+                      </div>
+                    </div>
+                  ))}
                   {dayAppointments.map((apt) => (
                     <div
                       key={apt._id}
@@ -293,12 +336,16 @@ function Calendar({ appointments = [], closures = [], onAppointmentClick }) {
 
       {/* Nombre de rendez-vous du mois affiché */}
       <div className="border-t border-gray-200 p-4 bg-gray-50">
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex flex-wrap items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-[#8b6f6f]"></div>
             <span className="text-gray-600 font-medium">
-              {appointmentsThisMonthCount} rendez-vous en {monthNames[month].toLowerCase()} {year}
+              {appointmentsThisMonthCount} rendez-vous salon
             </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#2a9d8f]"></div>
+            <span className="text-gray-600 font-medium">Head Spa Mobile</span>
           </div>
         </div>
       </div>
