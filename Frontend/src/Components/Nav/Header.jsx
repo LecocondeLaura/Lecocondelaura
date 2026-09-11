@@ -43,6 +43,15 @@ function Header() {
               Soins
             </Link>
             <Link
+              to="/head-spa-mobile"
+              className={linkClass("/head-spa-mobile")}
+            >
+              Head Spa Mobile
+            </Link>
+            <Link to="/instagram" className={linkClass("/instagram")}>
+              Instagram
+            </Link>
+            <Link
               to="/contact"
               className="rounded-full bg-[#6e5656] px-6 py-2.5 font-body text-sm font-semibold tracking-wide text-white shadow-md transition-all hover:scale-105 hover:bg-[#5a4343] hover:shadow-lg"
             >
@@ -95,6 +104,20 @@ function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               Soins
+            </Link>
+            <Link
+              to="/head-spa-mobile"
+              className="block py-2 font-body text-[#6e5656]"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Head Spa Mobile
+            </Link>
+            <Link
+              to="/instagram"
+              className="block py-2 font-body text-[#6e5656]"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Instagram
             </Link>
             <Link
               to="/contact"

@@ -160,6 +160,11 @@ function Comptes() {
     });
   };
 
+  const startEditFromMovement = (movement) => {
+    if (!movement?.expense) return;
+    startEdit(movement.expense);
+  };
+
   const cancelEdit = () => {
     setEditingId(null);
     setEditForm(emptyForm(now));
@@ -395,8 +400,11 @@ function Comptes() {
                   {formatEuro(summary.revenue?.total)}
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
-                  Massages {formatEuro(summary.revenue?.massages)} · Cartes{" "}
+                  Soins {formatEuro(summary.revenue?.massages)} · Cartes{" "}
                   {formatEuro(summary.revenue?.giftCards)}
+                  {summary.revenue?.mobile
+                    ? ` · Mobile ${formatEuro(summary.revenue.mobile)}`
+                    : ""}
                 </p>
               </div>
               <div className="rounded-2xl bg-white border border-[#f0cfcf]/60 shadow-sm p-5">
@@ -431,26 +439,28 @@ function Comptes() {
           </div>
         ) : null}
 
-        {/* Tableau */}
+        {/* Tableau suivi gains / dépenses */}
         <div className="rounded-2xl bg-white border border-[#f0cfcf]/60 shadow-sm overflow-hidden">
           <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
             <h2 className="text-lg font-bold text-[#8b6f6f]">
-              Dépenses · {periodTitle}
+              Suivi · {periodTitle}
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              Clique sur le crayon pour modifier une ligne
+              Les soins et cartes cadeaux payés apparaissent en{" "}
+              <span className="font-semibold text-emerald-700">GAIN</span>. Tu
+              peux ajouter ou modifier tes dépenses.
             </p>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="w-full min-w-[800px] text-left text-sm">
               <thead>
                 <tr className="bg-[#faf6f4] text-xs uppercase tracking-wide text-gray-500">
                   <th className="px-3 py-3 font-semibold">Date</th>
-                  <th className="px-3 py-3 font-semibold">Nom</th>
-                  <th className="px-3 py-3 font-semibold">Catégorie</th>
+                  <th className="px-3 py-3 font-semibold">Type</th>
+                  <th className="px-3 py-3 font-semibold">Libellé</th>
+                  <th className="px-3 py-3 font-semibold">Détail</th>
                   <th className="px-3 py-3 font-semibold text-right">Montant</th>
-                  <th className="px-3 py-3 font-semibold">Notes</th>
                   <th className="px-3 py-3 font-semibold text-center w-28">
                     Actions
                   </th>
@@ -463,45 +473,51 @@ function Comptes() {
                       Chargement…
                     </td>
                   </tr>
-                ) : summary?.expenses?.length ? (
-                  summary.expenses.map((expense) => {
-                    const isEditing = editingId === expense._id;
-                    return (
-                      <tr
-                        key={expense._id}
-                        className={`border-t border-gray-100 ${
-                          isEditing ? "bg-[#f0cfcf]/20" : "hover:bg-gray-50/80"
-                        }`}
-                      >
-                        {isEditing ? (
-                          <>
-                            <td className="px-2 py-2">
-                              <input
-                                type="date"
-                                value={editForm.date}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    date: e.target.value,
-                                  })
-                                }
-                                className={inputClass}
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              <input
-                                type="text"
-                                value={editForm.nom}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    nom: e.target.value,
-                                  })
-                                }
-                                className={inputClass}
-                              />
-                            </td>
-                            <td className="px-2 py-2">
+                ) : summary?.movements?.length ? (
+                  summary.movements.map((row) => {
+                    const isExpense = row.type === "depense";
+                    const isEditing =
+                      isExpense && editingId === row.expense?._id;
+
+                    if (isEditing) {
+                      return (
+                        <tr
+                          key={row.id}
+                          className="border-t border-gray-100 bg-[#f0cfcf]/20"
+                        >
+                          <td className="px-2 py-2">
+                            <input
+                              type="date"
+                              value={editForm.date}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  date: e.target.value,
+                                })
+                              }
+                              className={inputClass}
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                              Dépense
+                            </span>
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="text"
+                              value={editForm.nom}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  nom: e.target.value,
+                                })
+                              }
+                              className={inputClass}
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <div className="flex gap-2">
                               <select
                                 value={editForm.categorie}
                                 onChange={(e) =>
@@ -518,23 +534,6 @@ function Comptes() {
                                   </option>
                                 ))}
                               </select>
-                            </td>
-                            <td className="px-2 py-2">
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={editForm.montant}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    montant: e.target.value,
-                                  })
-                                }
-                                className={`${inputClass} text-right`}
-                              />
-                            </td>
-                            <td className="px-2 py-2">
                               <input
                                 type="text"
                                 value={editForm.notes}
@@ -544,70 +543,116 @@ function Comptes() {
                                     notes: e.target.value,
                                   })
                                 }
+                                placeholder="Notes"
                                 className={inputClass}
                               />
-                            </td>
-                            <td className="px-2 py-2">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  type="button"
-                                  disabled={saving}
-                                  onClick={() => handleSaveEdit(expense._id)}
-                                  className="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50"
-                                  title="Enregistrer"
-                                >
-                                  <CheckIcon className="w-5 h-5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={cancelEdit}
-                                  className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100"
-                                  title="Annuler"
-                                >
-                                  <XMarkIcon className="w-5 h-5" />
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="px-3 py-3 text-gray-700 whitespace-nowrap">
-                              {formatDateShort(expense.date)}
-                            </td>
-                            <td className="px-3 py-3 font-medium text-gray-800">
-                              {expense.nom}
-                            </td>
-                            <td className="px-3 py-3 text-gray-600">
-                              {expense.categorie || "—"}
-                            </td>
-                            <td className="px-3 py-3 text-right font-semibold text-rose-700 whitespace-nowrap">
-                              {formatEuro(expense.montant)}
-                            </td>
-                            <td className="px-3 py-3 text-gray-500 max-w-[12rem] truncate">
-                              {expense.notes || "—"}
-                            </td>
-                            <td className="px-3 py-3">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => startEdit(expense)}
-                                  className="p-1.5 rounded-lg text-[#8b6f6f] hover:bg-[#f0cfcf]/40"
-                                  title="Modifier"
-                                >
-                                  <PencilSquareIcon className="w-5 h-5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDelete(expense._id)}
-                                  className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
-                                  title="Supprimer"
-                                >
-                                  <TrashIcon className="w-5 h-5" />
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        )}
+                            </div>
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={editForm.montant}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  montant: e.target.value,
+                                })
+                              }
+                              className={`${inputClass} text-right`}
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() =>
+                                  handleSaveEdit(row.expense._id)
+                                }
+                                className="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50"
+                                title="Enregistrer"
+                              >
+                                <CheckIcon className="w-5 h-5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelEdit}
+                                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100"
+                                title="Annuler"
+                              >
+                                <XMarkIcon className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return (
+                      <tr
+                        key={row.id}
+                        className="border-t border-gray-100 hover:bg-gray-50/80"
+                      >
+                        <td className="px-3 py-3 text-gray-700 whitespace-nowrap">
+                          {formatDateShort(row.date)}
+                        </td>
+                        <td className="px-3 py-3">
+                          {row.type === "gain" ? (
+                            <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                              Gain
+                            </span>
+                          ) : (
+                            <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                              Dépense
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 font-medium text-gray-800">
+                          {row.label}
+                        </td>
+                        <td className="px-3 py-3 text-gray-500 max-w-[16rem] truncate">
+                          {row.detail || "—"}
+                        </td>
+                        <td
+                          className={`px-3 py-3 text-right font-semibold whitespace-nowrap ${
+                            row.type === "gain"
+                              ? "text-emerald-700"
+                              : "text-rose-700"
+                          }`}
+                        >
+                          {row.type === "gain" ? "+" : "−"}{" "}
+                          {formatEuro(row.montant)}
+                        </td>
+                        <td className="px-3 py-3">
+                          {isExpense ? (
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => startEditFromMovement(row)}
+                                className="p-1.5 rounded-lg text-[#8b6f6f] hover:bg-[#f0cfcf]/40"
+                                title="Modifier"
+                              >
+                                <PencilSquareIcon className="w-5 h-5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDelete(row.expense._id)
+                                }
+                                className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
+                                title="Supprimer"
+                              >
+                                <TrashIcon className="w-5 h-5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="block text-center text-xs text-gray-400">
+                              Auto
+                            </span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })
@@ -617,12 +662,12 @@ function Comptes() {
                       colSpan={6}
                       className="px-4 py-8 text-center text-gray-500"
                     >
-                      Aucune dépense pour cette période.
+                      Aucun mouvement pour cette période.
                     </td>
                   </tr>
                 )}
 
-                {/* Ligne d'ajout */}
+                {/* Ligne d'ajout dépense */}
                 <tr className="border-t-2 border-[#f0cfcf] bg-[#faf6f4]/80">
                   <td className="px-2 py-2">
                     <input
@@ -633,6 +678,11 @@ function Comptes() {
                       }
                       className={inputClass}
                     />
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                      Dépense
+                    </span>
                   </td>
                   <td className="px-2 py-2">
                     <input
@@ -646,19 +696,30 @@ function Comptes() {
                     />
                   </td>
                   <td className="px-2 py-2">
-                    <select
-                      value={form.categorie}
-                      onChange={(e) =>
-                        setForm({ ...form, categorie: e.target.value })
-                      }
-                      className={inputClass}
-                    >
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat || "none"} value={cat}>
-                          {cat || "—"}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        value={form.categorie}
+                        onChange={(e) =>
+                          setForm({ ...form, categorie: e.target.value })
+                        }
+                        className={inputClass}
+                      >
+                        {CATEGORIES.map((cat) => (
+                          <option key={cat || "none"} value={cat}>
+                            {cat || "—"}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={form.notes}
+                        onChange={(e) =>
+                          setForm({ ...form, notes: e.target.value })
+                        }
+                        placeholder="Notes"
+                        className={inputClass}
+                      />
+                    </div>
                   </td>
                   <td className="px-2 py-2">
                     <input
@@ -671,17 +732,6 @@ function Comptes() {
                       }
                       placeholder="0"
                       className={`${inputClass} text-right`}
-                    />
-                  </td>
-                  <td className="px-2 py-2">
-                    <input
-                      type="text"
-                      value={form.notes}
-                      onChange={(e) =>
-                        setForm({ ...form, notes: e.target.value })
-                      }
-                      placeholder="Notes"
-                      className={inputClass}
                     />
                   </td>
                   <td className="px-2 py-2">

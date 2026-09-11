@@ -1,5 +1,6 @@
 import express from "express";
 import Appointment from "../models/Appointment.js";
+import MobileQuote from "../models/MobileQuote.js";
 import { authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -17,11 +18,16 @@ router.get("/counts", authenticateToken, async (req, res) => {
       carteCadeauEnvoyee: false,
     });
 
+    const pendingMobileQuotes = await MobileQuote.countDocuments({
+      status: "pending",
+    });
+
     res.json({
       success: true,
       data: {
         appointments: pendingAppointments,
         giftCards: pendingGiftCards,
+        mobileQuotes: pendingMobileQuotes,
       },
     });
   } catch (error) {

@@ -16,10 +16,16 @@ import GiftCards from "./Pages/GiftCards";
 import Agenda from "./Pages/Agenda";
 import Conges from "./Pages/Conges";
 import Comptes from "./Pages/Comptes";
+import HeadSpaMobile from "./Pages/HeadSpaMobile";
+import HeadSpaMobileDashboard from "./Pages/HeadSpaMobileDashboard";
+import Instagram from "./Pages/Instagram";
+import InstagramDashboard from "./Pages/InstagramDashboard";
+import GoogleReviewsDashboard from "./Pages/GoogleReviewsDashboard";
 import Header from "./Components/Nav/Header";
 import Footer from "./Components/Nav/Footer";
 import ProtectedRoute from "./Components/ProtectedRoute";
 import ScrollToTop from "./Components/ScrollToTop";
+import Seo from "./Components/Seo";
 import MentionsLegales from "./Pages/MentionsLegales";
 import PolitiqueConfidentialite from "./Pages/PolitiqueConfidentialite";
 
@@ -29,6 +35,7 @@ function App() {
       <NotificationProvider>
         <Router>
         <ScrollToTop />
+        <Seo />
         <Routes>
           {/* Routes publiques avec Header et Footer */}
           <Route
@@ -67,6 +74,26 @@ function App() {
               <>
                 <Header />
                 <Services />
+                <Footer />
+              </>
+            }
+          />
+          <Route
+            path="/head-spa-mobile"
+            element={
+              <>
+                <Header />
+                <HeadSpaMobile />
+                <Footer />
+              </>
+            }
+          />
+          <Route
+            path="/instagram"
+            element={
+              <>
+                <Header />
+                <Instagram />
                 <Footer />
               </>
             }
@@ -115,6 +142,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <GiftCards />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/head-spa-mobile"
+            element={
+              <ProtectedRoute>
+                <HeadSpaMobileDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/instagram"
+            element={
+              <ProtectedRoute>
+                <InstagramDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/avis-google"
+            element={
+              <ProtectedRoute>
+                <GoogleReviewsDashboard />
               </ProtectedRoute>
             }
           />

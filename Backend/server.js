@@ -8,6 +8,9 @@ import clientRoutes from "./routes/clients.js";
 import notificationRoutes from "./routes/notifications.js";
 import closureRoutes from "./routes/closures.js";
 import expenseRoutes from "./routes/expenses.js";
+import mobileQuoteRoutes from "./routes/mobileQuotes.js";
+import instagramRoutes from "./routes/instagram.js";
+import googleReviewsRoutes from "./routes/googleReviews.js";
 import { startFollowUpScheduler } from "./services/followUpScheduler.js";
 
 // Charger les variables d'environnement
@@ -58,6 +61,9 @@ app.use("/api/clients", clientRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/closures", closureRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/mobile-quotes", mobileQuoteRoutes);
+app.use("/api/instagram", instagramRoutes);
+app.use("/api/google-reviews", googleReviewsRoutes);
 
 // Route de test
 app.get("/", (req, res) => {

@@ -32,6 +32,7 @@ function Contact() {
   const [isLoading, setIsLoading] = useState(false);
   const [availableTimes, setAvailableTimes] = useState([]);
   const [isDateClosed, setIsDateClosed] = useState(false);
+  const [isHeadSpaMobileDay, setIsHeadSpaMobileDay] = useState(false);
   const [availabilityError, setAvailabilityError] = useState(false);
   const [carteCadeaux, setCarteCadeaux] = useState(false);
 
@@ -144,10 +145,12 @@ function Contact() {
           if (result.isClosed) {
             setAvailableTimes([]);
             setIsDateClosed(true);
+            setIsHeadSpaMobileDay(result.isHeadSpaMobile === true);
             if (formData.heure) setFormData((prev) => ({ ...prev, heure: "" }));
             return;
           }
           setIsDateClosed(false);
+          setIsHeadSpaMobileDay(false);
 
           const closureBlockedSet = new Set(result.closureBlockedTimes || []);
 
@@ -185,11 +188,13 @@ function Contact() {
           console.error("Erreur lors de la récupération des horaires:", error);
           setAvailableTimes([]);
           setIsDateClosed(false);
+          setIsHeadSpaMobileDay(false);
           setAvailabilityError(true);
         }
       } else {
         setAvailableTimes([]);
         setIsDateClosed(false);
+        setIsHeadSpaMobileDay(false);
         setAvailabilityError(false);
         if (!formData.service) {
           setFormData((prev) => ({ ...prev, heure: "" }));
@@ -350,11 +355,11 @@ function Contact() {
           {/* Infos salon */}
           <aside className="space-y-5 lg:sticky lg:top-28">
             <div className="overflow-hidden rounded-3xl border border-sakura-soft/70 bg-white shadow-[0_20px_50px_-24px_rgba(47,40,38,0.25)]">
-              <div className="bg-gradient-to-br from-ink via-[#3a302e] to-sakura-deep/70 px-7 py-8 text-washi">
-                <p className="font-alex-brush text-3xl text-[#f8d5da]">
+              <div className="bg-gradient-to-br from-[#6e5656] via-[#5a4343] to-[#c97886]/80 px-7 py-8 text-washi">
+                <p className="font-alex-brush text-3xl text-[#f8d5da] text-center">
                   Le cocon de Laura
                 </p>
-                <p className="mt-2 font-body text-sm text-washi/70">
+                <p className="mt-2 font-body text-sm text-washi/70 text-center">
                   Head Spa japonais · Jonzac
                 </p>
               </div>
@@ -417,19 +422,6 @@ function Contact() {
                 </div>
               </div>
             </div>
-
-            <div className="rounded-2xl border border-dashed border-sakura-mid/50 bg-sakura-soft/20 px-6 py-5">
-              <p className="font-display text-lg text-ink">
-                Un premier pas vers la détente
-              </p>
-              <p className="mt-2 font-body text-sm leading-relaxed text-ink/60">
-                Essayez le{" "}
-                <strong className="font-medium text-sakura-deep">
-                  Soin Découverte
-                </strong>{" "}
-                à 50€ — idéal pour découvrir le Head Spa en douceur.
-              </p>
-            </div>
           </aside>
 
           {/* Formulaire */}
@@ -452,9 +444,7 @@ function Contact() {
                   </svg>
                 </div>
                 <h2 className="font-display text-3xl font-medium text-ink sm:text-4xl">
-                  {carteCadeaux
-                    ? "Demande envoyée"
-                    : "Réservation enregistrée"}
+                  {carteCadeaux ? "Demande envoyée" : "Réservation enregistrée"}
                 </h2>
                 <p className="mt-3 max-w-sm font-body text-ink/60">
                   {carteCadeaux
@@ -627,9 +617,7 @@ function Contact() {
                         </label>
                         {formData.date ? (
                           availableTimes.length > 0 ||
-                          allTimes.some((t) =>
-                            isTimePast(formData.date, t),
-                          ) ? (
+                          allTimes.some((t) => isTimePast(formData.date, t)) ? (
                             <select
                               id="heure"
                               name="heure"
@@ -650,7 +638,9 @@ function Contact() {
                                     value={heure}
                                     disabled={disabled}
                                     style={
-                                      disabled ? { color: "#9ca3af" } : undefined
+                                      disabled
+                                        ? { color: "#9ca3af" }
+                                        : undefined
                                     }
                                   >
                                     {heure}
@@ -667,7 +657,9 @@ function Contact() {
                             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
                               <p className="font-body text-sm font-medium text-amber-800">
                                 {isDateClosed
-                                  ? "Le salon est fermé ce jour-là."
+                                  ? isHeadSpaMobileDay
+                                    ? "Le salon est en déplacement ce jour-là (Head Spa Mobile)."
+                                    : "Le salon est fermé ce jour-là."
                                   : availabilityError
                                     ? "Disponibilités indisponibles temporairement. Réessayez dans un instant."
                                     : "Aucun créneau disponible pour cette date."}

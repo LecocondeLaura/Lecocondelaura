@@ -53,12 +53,13 @@ function MentionsLegales() {
                 </a>
               </p>
               <p>
-                <strong className="text-[#8b6f6f]">SIRET :</strong> [À
-                compléter]
+                <strong className="text-[#8b6f6f]">SIRET :</strong>{" "}
+                99114806500022
               </p>
               <p>
-                <strong className="text-[#8b6f6f]">Activité :</strong> Salon de
-                Head Spa et bien-être
+                <strong className="text-[#8b6f6f]">Activité :</strong> Head Spa
+                japonais en salon et en déplacement (Head Spa Mobile —
+                entreprises, hôtels &amp; spa, EHPAD)
               </p>
             </div>
           </section>
@@ -77,23 +78,9 @@ function MentionsLegales() {
             <h2 className="text-2xl font-bold text-[#8b6f6f] mb-4">
               3. Hébergement du site
             </h2>
-            <p className="text-gray-700 leading-relaxed mb-3">
-              Ce site est hébergé par :
+            <p className="text-gray-700 leading-relaxed">
+              <strong className="text-[#8b6f6f]">Hébergeur :</strong> Vercel
             </p>
-            <div className="space-y-2 text-gray-700">
-              <p>
-                <strong className="text-[#8b6f6f]">Hébergeur :</strong> [Nom de
-                l'hébergeur - À compléter]
-              </p>
-              <p>
-                <strong className="text-[#8b6f6f]">Adresse :</strong> [Adresse
-                de l'hébergeur - À compléter]
-              </p>
-              <p>
-                <strong className="text-[#8b6f6f]">Téléphone :</strong>{" "}
-                [Téléphone de l'hébergeur - À compléter]
-              </p>
-            </div>
           </section>
 
           <section>
@@ -180,7 +167,7 @@ function MentionsLegales() {
 
           <div className="pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500 italic">
-              Dernière mise à jour : {new Date().toLocaleDateString("fr-FR")}
+              Dernière mise à jour : 11 septembre 2026
             </p>
           </div>
         </div>

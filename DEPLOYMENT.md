@@ -47,6 +47,11 @@ Optionnel :
 | `SITE_URL` | Recommandé | URL du site en prod, ex. `https://lecocondelaura.fr` ou l’URL Vercel. |
 | `RIB` | Si besoin | RIB pour les emails (format texte). |
 | `FRONTEND_URL` | Recommandé | URL du front Vercel, ex. `https://ton-projet.vercel.app` ou `https://lecocondelaura.fr`. Utilisée pour CORS. |
+| `GOOGLE_PLACES_API_KEY` | Optionnel | Clé API Google Places (note + avis sur la landing). |
+| `GOOGLE_PLACE_ID` | Optionnel | Place ID de la fiche Google Business (ex. `ChIJ…`). |
+| `GOOGLE_MAPS_URL` | Optionnel | Lien vers la fiche Google Maps / avis. |
+| `GOOGLE_RATING` | Optionnel | Fallback manuel de la note (ex. `5`) si pas d’API. |
+| `GOOGLE_REVIEW_COUNT` | Optionnel | Fallback manuel du nombre d’avis (ex. `12`). |
 
 Après le premier déploiement, note l’**URL publique** du backend (ex. `https://lecocondelaura-backend.up.railway.app`).
 

@@ -1,0 +1,8 @@
+# Données personnelles — ne pas versionner
+AVIS-CLIENTS-RECONTACT.md
+Backend/.env
+Frontend/.env
+Frontend/.env.local
+node_modules/
+dist/
+.DS_Store

@@ -59,6 +59,7 @@ export const getAvailableTimesForDate = async (date, allTimes) => {
         availableTimes: data.data.availableTimes || [],
         reservedAppointments: data.data.reservedAppointments || [],
         isClosed: data.data.isClosed === true,
+        isHeadSpaMobile: data.data.isHeadSpaMobile === true,
         closureBlockedTimes: data.data.closureBlockedTimes || [],
         hasError: false,
       };
@@ -70,6 +71,7 @@ export const getAvailableTimesForDate = async (date, allTimes) => {
       availableTimes: [],
       reservedAppointments: [],
       isClosed: false,
+      isHeadSpaMobile: false,
       closureBlockedTimes: [],
       hasError: true,
     };
@@ -79,6 +81,7 @@ export const getAvailableTimesForDate = async (date, allTimes) => {
       availableTimes: [],
       reservedAppointments: [],
       isClosed: false,
+      isHeadSpaMobile: false,
       closureBlockedTimes: [],
       hasError: true,
     };

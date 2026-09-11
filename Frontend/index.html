@@ -7,11 +7,11 @@
     <title>Le Cocon de Laura | Head Spa japonais à Jonzac (17)</title>
     <meta
       name="description"
-      content="Head Spa japonais à Jonzac. Soin Découverte, Kodomo enfants, Rituel Détente et Rituel Ultime. Réservez votre moment de douceur au Cocon de Laura."
+      content="Head Spa japonais à Jonzac : rituels en salon, Head Spa Mobile en entreprise / hôtel / EHPAD. Découvrez les soins et réservez en ligne."
     />
     <meta
       name="keywords"
-      content="Head Spa Jonzac, head spa japonais, soin cuir chevelu, massage tête Jonzac, bien-être Charente-Maritime, Le Cocon de Laura"
+      content="Head Spa Jonzac, head spa japonais, Head Spa Mobile, soin cuir chevelu, massage tête Jonzac, bien-être Charente-Maritime, Le Cocon de Laura, réservation Head Spa"
     />
     <meta name="author" content="Le Cocon de Laura" />
     <meta name="robots" content="index, follow" />
@@ -27,7 +27,7 @@
     />
     <meta
       property="og:description"
-      content="Rituels Head Spa japonais à Jonzac : détente du cuir chevelu, soins adultes et enfants. Réservation en ligne."
+      content="Soins Head Spa en salon, Head Spa Mobile et réservation en ligne — Le Cocon de Laura à Jonzac."
     />
     <meta property="og:url" content="https://www.lecocondelaura.fr/" />
     <meta
@@ -43,7 +43,7 @@
     />
     <meta
       name="twitter:description"
-      content="Head Spa japonais à Jonzac — soins détente, rituels et bien-être. Réservez en ligne."
+      content="Soins Head Spa, Head Spa Mobile et réservation en ligne à Jonzac."
     />
 
     <meta name="theme-color" content="#f0cfcf" />
@@ -56,13 +56,14 @@
       rel="stylesheet"
     />
 
-    <!-- Données structurées Google (salon local) -->
+    <!-- Données structurées Google (salon + pages clés) -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "BeautySalon",
         "name": "Le Cocon de Laura",
-        "description": "Head Spa japonais à Jonzac — soins du cuir chevelu, rituels de détente pour adultes et enfants.",
+        "alternateName": "Le cocon de Laura",
+        "description": "Head Spa japonais à Jonzac — soins en salon, Head Spa Mobile (entreprises, hôtels & spa, EHPAD) et réservation en ligne.",
         "url": "https://www.lecocondelaura.fr/",
         "telephone": "+33787984341",
         "email": "lecocondelaura17@gmail.com",
@@ -74,11 +75,83 @@
           "postalCode": "17500",
           "addressCountry": "FR"
         },
-        "areaServed": {
-          "@type": "City",
-          "name": "Jonzac"
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 45.4463352,
+          "longitude": -0.4320777
         },
-        "priceRange": "€€"
+        "areaServed": [
+          { "@type": "City", "name": "Jonzac" },
+          { "@type": "AdministrativeArea", "name": "Charente-Maritime" }
+        ],
+        "priceRange": "€€",
+        "sameAs": [
+          "https://www.instagram.com/lecocondelaura17/",
+          "https://maps.app.goo.gl/fjQKdWRihyL9nJN39"
+        ],
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Soins Head Spa",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Soins Head Spa en salon",
+                "url": "https://www.lecocondelaura.fr/services"
+              }
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Head Spa Mobile",
+                "url": "https://www.lecocondelaura.fr/head-spa-mobile"
+              }
+            }
+          ]
+        },
+        "potentialAction": {
+          "@type": "ReserveAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://www.lecocondelaura.fr/contact",
+            "actionPlatform": [
+              "http://schema.org/DesktopWebPlatform",
+              "http://schema.org/MobileWebPlatform"
+            ]
+          },
+          "result": {
+            "@type": "Reservation",
+            "name": "Réservation Head Spa"
+          }
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "itemListElement": [
+          {
+            "@type": "SiteNavigationElement",
+            "position": 1,
+            "name": "Soins",
+            "url": "https://www.lecocondelaura.fr/services"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 2,
+            "name": "Head Spa Mobile",
+            "url": "https://www.lecocondelaura.fr/head-spa-mobile"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 3,
+            "name": "Réserver",
+            "url": "https://www.lecocondelaura.fr/contact"
+          }
+        ]
       }
     </script>
   </head>

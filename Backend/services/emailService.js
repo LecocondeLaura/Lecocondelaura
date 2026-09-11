@@ -1816,3 +1816,108 @@ Laura - Le Cocon de Laura
     return false;
   }
 };
+
+// Notification Laura : nouvelle demande de devis Head Spa Mobile
+export const sendMobileQuoteNotification = async (quote) => {
+  try {
+    const transporter = createTransporter();
+    const recipientEmail = process.env.RECIPIENT_EMAIL;
+    if (!recipientEmail) {
+      console.warn("⚠️ RECIPIENT_EMAIL non configuré, email non envoyé");
+      return false;
+    }
+
+    const typeLabels = {
+      entreprise: "Entreprise",
+      hotel_spa: "Hôtel & Spa",
+      ephad: "EHPAD",
+    };
+    const entreprise =
+      quote.entreprise || quote.nom || "Établissement";
+    const contact =
+      quote.contactNom ||
+      `${quote.prenom || ""} ${quote.nom || ""}`.trim() ||
+      "—";
+    const typeLabel =
+      typeLabels[quote.typeEtablissement] || quote.typeEtablissement || "—";
+
+    const mailOptions = {
+      from: getResendFrom(),
+      to: recipientEmail,
+      subject: `Nouvelle demande de devis Head Spa Mobile — ${entreprise}`,
+      html: `
+        <!DOCTYPE html>
+        <html><body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px;">
+          <div style="background:#f0cfcf;padding:24px;border-radius:10px 10px 0 0;text-align:center;">
+            <h1 style="color:#fff;margin:0;font-size:22px;">Demande de devis Head Spa Mobile</h1>
+          </div>
+          <div style="background:#fff;padding:24px;border:1px solid #eee;border-top:none;border-radius:0 0 10px 10px;">
+            <p><strong>Établissement :</strong> ${entreprise}</p>
+            <p><strong>Type :</strong> ${typeLabel}</p>
+            <p><strong>Contact :</strong> ${contact}</p>
+            <p><strong>Email :</strong> ${quote.email}</p>
+            <p><strong>Téléphone :</strong> ${quote.telephone}</p>
+            <p><strong>Ville :</strong> ${quote.lieu}</p>
+            ${quote.dateSouhaitee ? `<p><strong>Date souhaitée :</strong> ${quote.dateSouhaitee}</p>` : ""}
+            ${quote.nombrePersonnes ? `<p><strong>Personnes :</strong> ${quote.nombrePersonnes}</p>` : ""}
+            ${quote.message ? `<p><strong>Message :</strong><br>${String(quote.message).replace(/\n/g, "<br>")}</p>` : ""}
+            <p style="margin-top:20px;color:#666;font-size:13px;">Connecte-toi au dashboard → Head Spa Mobile pour répondre.</p>
+          </div>
+        </body></html>
+      `,
+      text: `Nouvelle demande Head Spa Mobile\n\n${entreprise} (${typeLabel})\nContact: ${contact}\n${quote.email}\n${quote.telephone}\nVille: ${quote.lieu}\n${quote.message || ""}`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Notification devis mobile envoyée à ${recipientEmail}`);
+    return true;
+  } catch (error) {
+    console.error("❌ Erreur notification devis mobile:", error.message);
+    return false;
+  }
+};
+
+// Confirmation client : demande de devis reçue
+export const sendMobileQuoteClientConfirmation = async (quote) => {
+  try {
+    const transporter = createTransporter();
+    const contactFirst =
+      (quote.contactNom || quote.prenom || "").trim().split(/\s+/)[0] ||
+      "bonjour";
+    const entreprise = quote.entreprise || quote.nom || "";
+
+    const mailOptions = {
+      from: getResendFrom(),
+      to: quote.email,
+      subject: `Votre demande de devis Head Spa Mobile — Le Cocon de Laura`,
+      html: `
+        <!DOCTYPE html>
+        <html><body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px;">
+          <div style="background:#f0cfcf;padding:24px;border-radius:10px 10px 0 0;text-align:center;">
+            <h1 style="color:#fff;margin:0;font-size:22px;">Demande bien reçue</h1>
+            <p style="color:#fff;margin:8px 0 0;">Le Cocon de Laura</p>
+          </div>
+          <div style="background:#fff;padding:24px;border:1px solid #eee;border-top:none;border-radius:0 0 10px 10px;">
+            <p>Bonjour ${contactFirst},</p>
+            <p>Merci pour votre demande de devis <strong>Head Spa Mobile</strong>${entreprise ? ` pour <strong>${entreprise}</strong>` : ""}. Laura vous recontactera rapidement avec une proposition adaptée.</p>
+            <div style="background:#faf6f4;padding:16px;border-radius:8px;margin:16px 0;">
+              <p style="margin:4px 0;"><strong>Ville :</strong> ${quote.lieu}</p>
+              ${quote.dateSouhaitee ? `<p style="margin:4px 0;"><strong>Date souhaitée :</strong> ${quote.dateSouhaitee}</p>` : ""}
+              ${quote.nombrePersonnes ? `<p style="margin:4px 0;"><strong>Personnes :</strong> ${quote.nombrePersonnes}</p>` : ""}
+            </div>
+            <p>À très bientôt,<br>Laura — Le Cocon de Laura</p>
+            <p style="font-size:13px;color:#666;">07 87 98 43 41 · lecocondelaura17@gmail.com</p>
+          </div>
+        </body></html>
+      `,
+      text: `Bonjour ${contactFirst},\n\nVotre demande de devis Head Spa Mobile a bien été reçue. Laura vous recontactera rapidement.\n\nVille : ${quote.lieu}\n\nLe Cocon de Laura`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Confirmation devis mobile envoyée à ${quote.email}`);
+    return true;
+  } catch (error) {
+    console.error("❌ Erreur confirmation devis mobile:", error.message);
+    return false;
+  }
+};

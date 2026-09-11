@@ -17,6 +17,7 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState({
     appointments: 0,
     giftCards: 0,
+    mobileQuotes: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,7 +25,7 @@ export const NotificationProvider = ({ children }) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        setNotifications({ appointments: 0, giftCards: 0 });
+        setNotifications({ appointments: 0, giftCards: 0, mobileQuotes: 0 });
         setIsLoading(false);
         return;
       }
@@ -40,6 +41,7 @@ export const NotificationProvider = ({ children }) => {
         setNotifications({
           appointments: data.data.appointments || 0,
           giftCards: data.data.giftCards || 0,
+          mobileQuotes: data.data.mobileQuotes || 0,
         });
       }
     } catch (error) {

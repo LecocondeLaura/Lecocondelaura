@@ -168,19 +168,40 @@ function SakuraBranch({ side = "left", className = "" }) {
 
 function FallingPetals() {
   const petals = [
-    { left: "8%", delay: "0s", duration: "18s", size: 11 },
-    { left: "18%", delay: "3s", duration: "22s", size: 8 },
-    { left: "28%", delay: "1.5s", duration: "20s", size: 12 },
-    { left: "40%", delay: "5s", duration: "19s", size: 9 },
-    { left: "52%", delay: "2s", duration: "21s", size: 10 },
-    { left: "62%", delay: "6s", duration: "17s", size: 8 },
-    { left: "72%", delay: "0.8s", duration: "23s", size: 11 },
-    { left: "82%", delay: "4s", duration: "20s", size: 9 },
-    { left: "90%", delay: "2.8s", duration: "18s", size: 13 },
+    { left: "3%", delay: "0s", duration: "16s", size: 12 },
+    { left: "7%", delay: "4.2s", duration: "21s", size: 8 },
+    { left: "11%", delay: "1.1s", duration: "19s", size: 14 },
+    { left: "15%", delay: "7s", duration: "23s", size: 9 },
+    { left: "19%", delay: "2.4s", duration: "18s", size: 11 },
+    { left: "23%", delay: "5.5s", duration: "20s", size: 7 },
+    { left: "27%", delay: "0.6s", duration: "22s", size: 13 },
+    { left: "31%", delay: "8.1s", duration: "17s", size: 10 },
+    { left: "35%", delay: "3.3s", duration: "24s", size: 8 },
+    { left: "39%", delay: "1.8s", duration: "19s", size: 12 },
+    { left: "43%", delay: "6.4s", duration: "21s", size: 9 },
+    { left: "47%", delay: "0.3s", duration: "18s", size: 15 },
+    { left: "51%", delay: "4.8s", duration: "20s", size: 10 },
+    { left: "55%", delay: "2.1s", duration: "23s", size: 8 },
+    { left: "59%", delay: "7.5s", duration: "16s", size: 11 },
+    { left: "63%", delay: "1.4s", duration: "22s", size: 13 },
+    { left: "67%", delay: "5.2s", duration: "19s", size: 7 },
+    { left: "71%", delay: "3.7s", duration: "21s", size: 12 },
+    { left: "75%", delay: "0.9s", duration: "17s", size: 9 },
+    { left: "79%", delay: "6.8s", duration: "24s", size: 14 },
+    { left: "83%", delay: "2.7s", duration: "18s", size: 8 },
+    { left: "87%", delay: "4.5s", duration: "20s", size: 11 },
+    { left: "91%", delay: "1.6s", duration: "22s", size: 10 },
+    { left: "95%", delay: "8.4s", duration: "19s", size: 13 },
+    { left: "5%", delay: "9.2s", duration: "25s", size: 6 },
+    { left: "25%", delay: "10s", duration: "26s", size: 7 },
+    { left: "48%", delay: "9.5s", duration: "24s", size: 6 },
+    { left: "68%", delay: "11s", duration: "27s", size: 8 },
+    { left: "88%", delay: "9.8s", duration: "25s", size: 7 },
+    { left: "33%", delay: "12s", duration: "28s", size: 9 },
   ];
 
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden z-[2]" aria-hidden>
       {petals.map((p, i) => (
         <span
           key={i}

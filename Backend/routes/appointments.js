@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import Appointment from "../models/Appointment.js";
+import MobileQuote from "../models/MobileQuote.js";
 import { authenticateToken } from "../middleware/auth.js";
 import {
   getPriceForService,
@@ -138,6 +139,7 @@ router.get("/stats/revenue", authenticateToken, async (req, res) => {
       massageMonth,
       giftCardsWeek,
       giftCardsMonth,
+      mobileQuotesPaid,
     ] = await Promise.all([
       Appointment.find({
         ...paidMassageFilter,
@@ -155,29 +157,81 @@ router.get("/stats/revenue", authenticateToken, async (req, res) => {
         ...paidGiftCardFilter,
         createdAt: { $gte: startOfMonth, $lte: endOfMonth },
       }).select("service"),
+      MobileQuote.find({
+        $or: [
+          { paiementEffectue: true, montant: { $gt: 0 } },
+          { acompteRecuAt: { $ne: null }, montantAcompte: { $gt: 0 } },
+        ],
+      }).select(
+        "montant montantAcompte acompteRecuAt paiementEffectue dateDebutMission dateFinMission joursIntervention"
+      ),
     ]);
 
     const sumRevenue = (list) =>
       list.reduce((acc, apt) => acc + (getPriceForService(apt.service) || 0), 0);
 
+    const mobileQuoteRevenueDate = (q) => {
+      if (Array.isArray(q.joursIntervention) && q.joursIntervention.length) {
+        return q.joursIntervention[q.joursIntervention.length - 1];
+      }
+      return q.dateFinMission || q.dateDebutMission || null;
+    };
+
+    const inRange = (date, start, end) => {
+      if (!date) return false;
+      const t = new Date(date).getTime();
+      return t >= start.getTime() && t <= end.getTime();
+    };
+
+    const mobileFinalAmount = (q) => {
+      const total = q.montant || 0;
+      if (!q.paiementEffectue || total <= 0) return 0;
+      const acompte =
+        q.acompteRecuAt && q.montantAcompte > 0 ? q.montantAcompte : 0;
+      return Math.max(0, total - acompte);
+    };
+
+    const sumMobileInRange = (start, end) =>
+      mobileQuotesPaid.reduce((acc, q) => {
+        let sum = 0;
+        if (
+          q.acompteRecuAt &&
+          q.montantAcompte > 0 &&
+          inRange(q.acompteRecuAt, start, end)
+        ) {
+          sum += q.montantAcompte;
+        }
+        const finalAmt = mobileFinalAmount(q);
+        if (finalAmt > 0 && inRange(mobileQuoteRevenueDate(q), start, end)) {
+          sum += finalAmt;
+        }
+        return acc + sum;
+      }, 0);
+
     const massageWeekRevenue = sumRevenue(massageWeek);
     const massageMonthRevenue = sumRevenue(massageMonth);
     const giftCardsWeekRevenue = sumRevenue(giftCardsWeek);
     const giftCardsMonthRevenue = sumRevenue(giftCardsMonth);
+    const mobileWeekRevenue = sumMobileInRange(startOfWeek, endOfWeek);
+    const mobileMonthRevenue = sumMobileInRange(startOfMonth, endOfMonth);
 
     res.json({
       success: true,
       data: {
         // Compatibilité avec l'UI existante
-        week: massageWeekRevenue,
-        month: massageMonthRevenue,
+        week: massageWeekRevenue + giftCardsWeekRevenue + mobileWeekRevenue,
+        month: massageMonthRevenue + giftCardsMonthRevenue + mobileMonthRevenue,
         // Détail par catégorie
         massageWeek: massageWeekRevenue,
         massageMonth: massageMonthRevenue,
         giftCardsWeek: giftCardsWeekRevenue,
         giftCardsMonth: giftCardsMonthRevenue,
-        totalWeek: massageWeekRevenue + giftCardsWeekRevenue,
-        totalMonth: massageMonthRevenue + giftCardsMonthRevenue,
+        mobileWeek: mobileWeekRevenue,
+        mobileMonth: mobileMonthRevenue,
+        totalWeek:
+          massageWeekRevenue + giftCardsWeekRevenue + mobileWeekRevenue,
+        totalMonth:
+          massageMonthRevenue + giftCardsMonthRevenue + mobileMonthRevenue,
         weekStart: startOfWeek.toISOString().slice(0, 10),
         weekEnd: endOfWeek.toISOString().slice(0, 10),
         monthLabel: `${year}-${String(month + 1).padStart(2, "0")}`,
@@ -204,7 +258,8 @@ router.get("/available/:date", async (req, res) => {
       "18:00",
     ];
 
-    const closureBlocked = await Closure.getBlockedSlotTimesForDate(date);
+    const blockInfo = await Closure.getBlockInfoForDate(date);
+    const closureBlocked = blockInfo.blocked;
     const closureBlockedTimes = [...closureBlocked];
     const timesAfterClosures = allTimes.filter((t) => !closureBlocked.has(t));
 
@@ -217,6 +272,7 @@ router.get("/available/:date", async (req, res) => {
           reservedTimes: [],
           reservedAppointments: [],
           isClosed: true,
+          isHeadSpaMobile: blockInfo.isHeadSpaMobileDay === true,
           closureBlockedTimes,
         },
       });
@@ -246,6 +302,7 @@ router.get("/available/:date", async (req, res) => {
         reservedTimes: reservedTimes,
         reservedAppointments: reservedAppointments,
         isClosed: false,
+        isHeadSpaMobile: false,
         closureBlockedTimes,
       },
     });

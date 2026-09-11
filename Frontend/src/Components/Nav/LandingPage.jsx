@@ -1,8 +1,45 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { SakuraBranch, FallingPetals } from "../UI/SakuraBranches";
+import { FallingPetals } from "../UI/SakuraBranches";
+import API_BASE_URL from "../../config/api.config.js";
+
+function StarRow({ rating }) {
+  const full = Math.round(Number(rating) || 0);
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-hidden>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <svg
+          key={i}
+          viewBox="0 0 20 20"
+          className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${
+            i <= full ? "fill-[#c97886]" : "fill-[#e8a8b2]/35"
+          }`}
+        >
+          <path d="M10 1.5l2.35 4.76 5.25.76-3.8 3.7.9 5.24L10 13.77 5.3 15.96l.9-5.24-3.8-3.7 5.25-.76L10 1.5z" />
+        </svg>
+      ))}
+    </span>
+  );
+}
 
 function LandingPage() {
+  const [google, setGoogle] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE_URL}/google-reviews`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data.success && data.data?.rating != null) {
+          setGoogle(data.data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section className="relative flex min-h-[100svh] w-full flex-col overflow-x-hidden">
       {/* Fond */}
@@ -29,20 +66,6 @@ function LandingPage() {
 
       <FallingPetals />
 
-      {/* Sakura */}
-      <div className="pointer-events-none absolute left-0 top-[14%] z-[1] h-[58%] w-[30%] max-w-[180px] -translate-x-[28%] opacity-55 sm:top-[10%] sm:h-[78%] sm:w-[34%] sm:max-w-[340px] sm:-translate-x-[10%] sm:opacity-85 lg:max-w-[420px] lg:-translate-x-[4%]">
-        <SakuraBranch
-          side="left"
-          className="sakura-branch-enter h-full w-full origin-top-left"
-        />
-      </div>
-      <div className="pointer-events-none absolute right-0 top-[14%] z-[1] h-[58%] w-[30%] max-w-[180px] translate-x-[28%] opacity-55 sm:top-[10%] sm:h-[78%] sm:w-[34%] sm:max-w-[340px] sm:translate-x-[10%] sm:opacity-85 lg:max-w-[420px] lg:translate-x-[4%]">
-        <SakuraBranch
-          side="right"
-          className="sakura-branch-enter-right h-full w-full origin-top-right"
-        />
-      </div>
-
       {/* Contenu */}
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center px-4 pb-20 pt-28 text-center sm:px-8 sm:pb-24 sm:pt-32">
         <p className="hero-fade-up font-display text-[11px] tracking-[0.35em] text-[#c97886]/90 uppercase sm:text-sm sm:tracking-[0.45em] md:text-base">
@@ -68,6 +91,24 @@ function LandingPage() {
           <br className="hidden sm:block" />
           Laissez le calme revenir, pétale après pétale.
         </p>
+
+        {google && (
+          <a
+            href={google.mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hero-fade-up hero-fade-up-delay-2 mt-6 inline-flex items-center gap-2.5 rounded-full border border-[#e8a8b2]/45 bg-white/55 px-5 py-2.5 backdrop-blur-sm transition hover:bg-white/80 sm:mt-8"
+          >
+            <StarRow rating={google.rating} />
+            <span className="font-body text-sm font-medium text-[#6e5656]">
+              {Number(google.rating).toFixed(1).replace(".", ",")}
+            </span>
+            <span className="h-1 w-1 rounded-full bg-[#e8a8b2]" aria-hidden />
+            <span className="font-body text-sm text-[#6e5656]/65">
+              {google.reviewCount} avis Google
+            </span>
+          </a>
+        )}
 
         <div className="hero-fade-up hero-fade-up-delay-3 mt-8 flex w-full max-w-sm flex-col items-stretch gap-3 sm:mt-12 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-5">
           <Link

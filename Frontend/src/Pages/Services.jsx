@@ -20,7 +20,7 @@ function Services() {
             Les rituels
           </p>
           <h1 className="font-display text-3xl font-medium text-[#6e5656] sm:text-4xl md:text-5xl lg:text-6xl">
-            Head Spa japonais
+            Soins Head Spa
           </h1>
           <div className="mx-auto mt-5 h-px w-16 bg-[#e8a8b2]/80" />
           <p className="mx-auto mt-5 max-w-2xl font-body text-base leading-relaxed text-[#6e5656]/65 sm:text-lg">
