@@ -12,9 +12,7 @@ const formatPriceInEmail = (appointmentOrService) => {
     const pct = appointmentOrService.remisePourcent;
     if (!amount) return "";
     if (catalog && catalog > amount) {
-      return `${amount} € au lieu de ${catalog} €${
-        pct ? ` (−${pct} %)` : ""
-      }`;
+      return `${amount} € au lieu de ${catalog} €${pct ? ` (−${pct} %)` : ""}`;
     }
     return `${amount} €`;
   }
@@ -42,12 +40,15 @@ const sendViaResend = async (mailOptions) => {
     subject: mailOptions.subject,
     html: mailOptions.html || "",
   };
-  const replyTo = process.env.RESEND_REPLY_TO?.trim() || process.env.RECIPIENT_EMAIL?.trim();
+  const replyTo =
+    process.env.RESEND_REPLY_TO?.trim() || process.env.RECIPIENT_EMAIL?.trim();
   if (replyTo) payload.reply_to = replyTo;
   if (mailOptions.attachments?.length) {
     payload.attachments = mailOptions.attachments.map((a) => {
       const content = a.content || a.raw;
-      const base64 = Buffer.isBuffer(content) ? content.toString("base64") : Buffer.from(String(content)).toString("base64");
+      const base64 = Buffer.isBuffer(content)
+        ? content.toString("base64")
+        : Buffer.from(String(content)).toString("base64");
       return { filename: a.filename || "attachment", content: base64 };
     });
   }
@@ -71,7 +72,7 @@ const createTransporter = () => {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) {
     throw new Error(
-      "RESEND_API_KEY est requis. Configurez-le sur Railway (resend.com → API Keys)."
+      "RESEND_API_KEY est requis. Configurez-le sur Railway (resend.com → API Keys).",
     );
   }
   return {
@@ -1846,8 +1847,7 @@ export const sendMobileQuoteNotification = async (quote) => {
       hotel_spa: "Hôtel & Spa",
       ephad: "EHPAD",
     };
-    const entreprise =
-      quote.entreprise || quote.nom || "Établissement";
+    const entreprise = quote.entreprise || quote.nom || "Établissement";
     const contact =
       quote.contactNom ||
       `${quote.prenom || ""} ${quote.nom || ""}`.trim() ||
@@ -1947,7 +1947,7 @@ export const sendPromoBroadcastEmail = async (client, message) => {
   await transporter.sendMail({
     from: getResendFrom(),
     to: client.email,
-    subject: "Une offre du Cocon de Laura",
+    subject: "Offre spéciale du Cocon de Laura",
     html: `
       <!DOCTYPE html>
       <html><body style="font-family:Arial,sans-serif;color:#5a4343;max-width:600px;margin:0 auto;padding:20px;">
@@ -1957,12 +1957,12 @@ export const sendPromoBroadcastEmail = async (client, message) => {
         <div style="background:#fff;padding:24px;border:1px solid #f0cfcf;border-top:none;border-radius:0 0 16px 16px;">
           <p>Bonjour ${first},</p>
           <p style="line-height:1.6;">${safeMessage}</p>
-          <p style="margin-top:24px;">À très bientôt,<br>Laura</p>
+          <p style="margin-top:24px;">À très bientôt,<br>Le Cocon de Laura</p>
           <p style="font-size:13px;color:#8b6f6f;">07 87 98 43 41 · lecocondelaura.fr</p>
         </div>
       </body></html>
     `,
-    text: `Bonjour ${first},\n\n${message}\n\nLaura — Le Cocon de Laura`,
+    text: `Bonjour ${first},\n\n${message}\n\nÀ très bientôt,\nLe Cocon de Laura`,
   });
   return true;
 };
