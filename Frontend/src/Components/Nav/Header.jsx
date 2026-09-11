@@ -32,10 +32,7 @@ function Header() {
             Le cocon de Laura
           </Link>
 
-          <div className="hidden items-center gap-8 md:flex">
-            <Link to="/" className={linkClass("/")}>
-              Accueil
-            </Link>
+          <div className="hidden items-center gap-6 md:flex lg:gap-8">
             <Link to="/about" className={linkClass("/about")}>
               À propos
             </Link>
@@ -55,7 +52,7 @@ function Header() {
               to="/contact"
               className="rounded-full bg-[#6e5656] px-6 py-2.5 font-body text-sm font-semibold tracking-wide text-white shadow-md transition-all hover:scale-105 hover:bg-[#5a4343] hover:shadow-lg"
             >
-              Réserver
+              Réserver un soin
             </Link>
           </div>
 
@@ -85,13 +82,6 @@ function Header() {
         {isMenuOpen && (
           <div className="space-y-3 border-t border-[#6e5656]/15 px-4 pb-4 pt-3 md:hidden">
             <Link
-              to="/"
-              className="block py-2 font-body text-[#6e5656]"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Accueil
-            </Link>
-            <Link
               to="/about"
               className="block py-2 font-body text-[#6e5656]"
               onClick={() => setIsMenuOpen(false)}
@@ -103,14 +93,14 @@ function Header() {
               className="block py-2 font-body text-[#6e5656]"
               onClick={() => setIsMenuOpen(false)}
             >
-              Soins
+              Découvrir les soins
             </Link>
             <Link
               to="/head-spa-mobile"
               className="block py-2 font-body text-[#6e5656]"
               onClick={() => setIsMenuOpen(false)}
             >
-              Head Spa Mobile
+              Découvrir le Head Spa Mobile
             </Link>
             <Link
               to="/instagram"
@@ -124,7 +114,7 @@ function Header() {
               className="block rounded-full bg-[#6e5656] px-5 py-2.5 text-center font-body text-sm font-semibold text-white"
               onClick={() => setIsMenuOpen(false)}
             >
-              Réserver
+              Réserver un soin
             </Link>
           </div>
         )}

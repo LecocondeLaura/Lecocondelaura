@@ -7,7 +7,7 @@ import {
   GiftIcon,
 } from "@heroicons/react/24/outline";
 import API_BASE_URL from "../../config/api.config.js";
-import { BOOKING_SERVICES } from "../../Data/bookingServices.js";
+import { BOOKING_SERVICES, getCatalogPrice } from "../../Data/bookingServices.js";
 
 function CreateGiftCardModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -17,11 +17,19 @@ function CreateGiftCardModal({ isOpen, onClose, onSuccess }) {
     telephone: "",
     service: "",
     message: "",
+    remisePourcent: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
   const services = BOOKING_SERVICES;
+  const catalog = getCatalogPrice(formData.service);
+  const remise = Number(formData.remisePourcent);
+  const hasRemise = Number.isFinite(remise) && remise > 0 && remise <= 100;
+  const prixFinal =
+    catalog != null && hasRemise
+      ? Math.max(0, Math.round(catalog * (1 - remise / 100)))
+      : catalog;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -73,6 +81,7 @@ function CreateGiftCardModal({ isOpen, onClose, onSuccess }) {
         body: JSON.stringify({
           ...formData,
           carteCadeaux: true,
+          remisePourcent: hasRemise ? remise : undefined,
         }),
       });
 
@@ -89,6 +98,7 @@ function CreateGiftCardModal({ isOpen, onClose, onSuccess }) {
           telephone: "",
           service: "",
           message: "",
+          remisePourcent: "",
         });
         setErrors({});
       } else {
@@ -248,14 +258,53 @@ function CreateGiftCardModal({ isOpen, onClose, onSuccess }) {
                   }`}
                 >
                   <option value="">Sélectionnez un service</option>
-                  {services.map((service, index) => (
-                    <option key={index} value={service}>
-                      {service}
-                    </option>
-                  ))}
+                  {services.map((service, index) => {
+                    const price = getCatalogPrice(service);
+                    return (
+                      <option key={index} value={service}>
+                        {price ? `${service} — ${price}€` : service}
+                      </option>
+                    );
+                  })}
                 </select>
                 {errors.service && (
                   <p className="text-red-600 text-xs mt-1">{errors.service}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Réduction salon / événement (optionnel)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="remisePourcent"
+                    min="0"
+                    max="100"
+                    value={formData.remisePourcent}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-4 focus:ring-[#f0cfcf]/20 focus:border-[#f0cfcf] outline-none transition-all pr-12"
+                    placeholder="0"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 font-semibold text-gray-500">
+                    %
+                  </span>
+                </div>
+                {formData.service && catalog != null && (
+                  <p className="mt-2 text-sm text-[#8b6f6f]">
+                    {hasRemise ? (
+                      <>
+                        Prix :{" "}
+                        <span className="text-gray-400 line-through">
+                          {catalog}€
+                        </span>{" "}
+                        <span className="font-bold">{prixFinal}€</span>
+                        {" "}(−{Math.round(remise)} %)
+                      </>
+                    ) : (
+                      <>Prix : <span className="font-bold">{catalog}€</span></>
+                    )}
+                  </p>
                 )}
               </div>
               <div>

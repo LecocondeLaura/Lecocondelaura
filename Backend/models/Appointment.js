@@ -107,6 +107,25 @@ const appointmentSchema = new mongoose.Schema(
       enum: ["pending", "confirmed", "cancelled", "completed"],
       default: "pending",
     },
+    montant: {
+      type: Number,
+      default: null,
+    },
+    montantCatalogue: {
+      type: Number,
+      default: null,
+    },
+    promotionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Promotion",
+      default: null,
+    },
+    remisePourcent: {
+      type: Number,
+      default: null,
+      min: 0,
+      max: 100,
+    },
   },
   {
     timestamps: true, // Ajoute createdAt et updatedAt automatiquement

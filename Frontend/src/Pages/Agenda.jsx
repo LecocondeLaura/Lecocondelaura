@@ -338,22 +338,21 @@ function Agenda() {
         onSuccess={handleCreateSuccess}
       />
       <div className="w-full">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-[#8b6f6f] mb-2">
+            <h1 className="mb-1 text-2xl font-black text-[#8b6f6f] sm:mb-2 sm:text-4xl md:text-5xl">
               Agenda
             </h1>
-            <p className="text-sm sm:text-base text-gray-600">
+            <p className="text-sm text-gray-600 sm:text-base">
               Visualisez tous vos rendez-vous sur le calendrier
             </p>
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-[#8b6f6f] text-white rounded-xl font-semibold hover:bg-[#7a5f5f] transition-colors shadow-lg"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#8b6f6f] px-5 py-3 font-semibold text-white shadow-lg transition-colors hover:bg-[#7a5f5f] sm:w-auto sm:px-6"
           >
-            <PlusIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">Nouveau rendez-vous</span>
-            <span className="sm:hidden">Nouveau</span>
+            <PlusIcon className="h-5 w-5" />
+            Nouveau rendez-vous
           </button>
         </div>
 

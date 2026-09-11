@@ -21,6 +21,7 @@ import HeadSpaMobileDashboard from "./Pages/HeadSpaMobileDashboard";
 import Instagram from "./Pages/Instagram";
 import InstagramDashboard from "./Pages/InstagramDashboard";
 import GoogleReviewsDashboard from "./Pages/GoogleReviewsDashboard";
+import Promotions from "./Pages/Promotions";
 import Header from "./Components/Nav/Header";
 import Footer from "./Components/Nav/Footer";
 import ProtectedRoute from "./Components/ProtectedRoute";
@@ -166,6 +167,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <GoogleReviewsDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/promotions"
+            element={
+              <ProtectedRoute>
+                <Promotions />
               </ProtectedRoute>
             }
           />

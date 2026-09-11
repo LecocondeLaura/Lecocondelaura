@@ -26,3 +26,14 @@ export const authenticateToken = (req, res, next) => {
     }
   );
 };
+
+export const getUserFromOptionalToken = (req) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return null;
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+  } catch {
+    return null;
+  }
+};

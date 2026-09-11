@@ -121,7 +121,7 @@ function LandingPage() {
             to="/services"
             className="inline-flex items-center justify-center rounded-full border border-[#6e5656]/25 bg-white/50 px-8 py-3.5 font-body text-sm font-medium tracking-[0.1em] text-[#6e5656] backdrop-blur-sm transition-colors hover:border-[#c97886] hover:bg-white/80 sm:min-w-[200px] sm:px-10 sm:py-4"
           >
-            Découvrir les rituels
+            Découvrir les soins
           </Link>
         </div>
       </div>

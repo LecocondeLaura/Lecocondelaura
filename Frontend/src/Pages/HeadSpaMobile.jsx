@@ -52,7 +52,7 @@ function HeadSpaMobile() {
             Le salon se déplace
           </p>
           <h1 className="font-display text-4xl font-medium text-[#6e5656] sm:text-5xl md:text-6xl">
-            Head Spa{" "}
+            Découvrir le Head Spa{" "}
             <span className="font-alex-brush text-[#c97886]">Mobile</span>
           </h1>
           <div className="mx-auto mt-6 h-px w-16 bg-[#e8a8b2]/70" />

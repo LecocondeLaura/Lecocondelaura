@@ -11,6 +11,7 @@ import expenseRoutes from "./routes/expenses.js";
 import mobileQuoteRoutes from "./routes/mobileQuotes.js";
 import instagramRoutes from "./routes/instagram.js";
 import googleReviewsRoutes from "./routes/googleReviews.js";
+import promotionRoutes from "./routes/promotions.js";
 import { startFollowUpScheduler } from "./services/followUpScheduler.js";
 
 // Charger les variables d'environnement
@@ -64,6 +65,7 @@ app.use("/api/expenses", expenseRoutes);
 app.use("/api/mobile-quotes", mobileQuoteRoutes);
 app.use("/api/instagram", instagramRoutes);
 app.use("/api/google-reviews", googleReviewsRoutes);
+app.use("/api/promotions", promotionRoutes);
 
 // Route de test
 app.get("/", (req, res) => {

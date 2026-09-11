@@ -8,20 +8,26 @@ const DEFAULT = {
     "Head Spa japonais à Jonzac : rituels en salon, Head Spa Mobile en entreprise / hôtel / EHPAD. Découvrez les soins et réservez en ligne.",
 };
 
+const NOINDEX_PREFIXES = ["/login", "/dashboard"];
+const NOINDEX_PATHS = new Set([
+  "/mentions-legales",
+  "/politique-confidentialite",
+]);
+
 const PAGES = {
   "/": DEFAULT,
   "/services": {
-    title: "Soins Head Spa | Le Cocon de Laura — Jonzac",
+    title: "Découvrir les soins | Le Cocon de Laura — Jonzac",
     description:
       "Soin Découverte, Kodomo, Rituel Détente et Rituel Ultime. Découvrez les rituels Head Spa japonais au Cocon de Laura à Jonzac.",
   },
   "/head-spa-mobile": {
-    title: "Head Spa Mobile | Le Cocon de Laura — entreprises, hôtels, EHPAD",
+    title: "Découvrir le Head Spa Mobile | Le Cocon de Laura",
     description:
       "Le salon se déplace : Head Spa Mobile pour entreprises, hôtels & spa et EHPAD. Demandez un devis au Cocon de Laura.",
   },
   "/contact": {
-    title: "Réserver un Head Spa | Le Cocon de Laura — Jonzac",
+    title: "Réserver un soin | Le Cocon de Laura — Jonzac",
     description:
       "Réservez votre soin Head Spa en ligne : 70 rue Sadi Carnot, 17500 Jonzac. Réponse rapide par email ou téléphone.",
   },
@@ -82,6 +88,15 @@ function Seo() {
     upsertMeta("name", "twitter:title", page.title);
     upsertMeta("name", "twitter:description", page.description);
     upsertLink("canonical", url);
+
+    const hideFromGoogle =
+      NOINDEX_PATHS.has(pathname) ||
+      NOINDEX_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+    upsertMeta(
+      "name",
+      "robots",
+      hideFromGoogle ? "noindex, follow" : "index, follow",
+    );
   }, [pathname, page.title, page.description, url]);
 
   return null;

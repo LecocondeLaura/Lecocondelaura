@@ -2,9 +2,8 @@ import express from "express";
 import path from "path";
 import Appointment from "../models/Appointment.js";
 import MobileQuote from "../models/MobileQuote.js";
-import { authenticateToken } from "../middleware/auth.js";
+import { authenticateToken, getUserFromOptionalToken } from "../middleware/auth.js";
 import {
-  getPriceForService,
   sendAppointmentNotification,
   sendClientConfirmationEmail,
   sendGiftCardRequestEmail,
@@ -14,6 +13,7 @@ import {
   sendGiftCardReminderEmail,
   sendFollowUpEmail,
 } from "../services/emailService.js";
+import { getAppointmentAmount, getCatalogPrice } from "../services/pricing.js";
 import {
   generateGiftCardPDF,
   generateGiftCardPDFFromImage,
@@ -144,19 +144,19 @@ router.get("/stats/revenue", authenticateToken, async (req, res) => {
       Appointment.find({
         ...paidMassageFilter,
         date: { $gte: startOfWeek, $lte: endOfWeek },
-      }).select("service"),
+      }).select("service montant"),
       Appointment.find({
         ...paidMassageFilter,
         date: { $gte: startOfMonth, $lte: endOfMonth },
-      }).select("service"),
+      }).select("service montant"),
       Appointment.find({
         ...paidGiftCardFilter,
         createdAt: { $gte: startOfWeek, $lte: endOfWeek },
-      }).select("service"),
+      }).select("service montant"),
       Appointment.find({
         ...paidGiftCardFilter,
         createdAt: { $gte: startOfMonth, $lte: endOfMonth },
-      }).select("service"),
+      }).select("service montant"),
       MobileQuote.find({
         $or: [
           { paiementEffectue: true, montant: { $gt: 0 } },
@@ -168,7 +168,7 @@ router.get("/stats/revenue", authenticateToken, async (req, res) => {
     ]);
 
     const sumRevenue = (list) =>
-      list.reduce((acc, apt) => acc + (getPriceForService(apt.service) || 0), 0);
+      list.reduce((acc, apt) => acc + (getAppointmentAmount(apt) || 0), 0);
 
     const mobileQuoteRevenueDate = (q) => {
       if (Array.isArray(q.joursIntervention) && q.joursIntervention.length) {
@@ -328,6 +328,7 @@ router.post("/", async (req, res) => {
       heure,
       message,
       carteCadeaux: carteCadeauxRaw,
+      remisePourcent: remisePourcentRaw,
     } = req.body;
     const carteCadeaux =
       carteCadeauxRaw === true ||
@@ -373,6 +374,20 @@ router.post("/", async (req, res) => {
     }
 
     // Créer le rendez-vous/carte cadeaux
+    const catalog = getCatalogPrice(service);
+    let montant = catalog;
+    let remisePourcent = null;
+    if (carteCadeaux && getUserFromOptionalToken(req)) {
+      const pct = Number(remisePourcentRaw);
+      if (Number.isFinite(pct) && pct > 0 && pct <= 100) {
+        remisePourcent = Math.round(pct);
+        montant =
+          catalog != null
+            ? Math.max(0, Math.round(catalog * (1 - remisePourcent / 100)))
+            : null;
+      }
+    }
+
     const appointmentData = {
       nom,
       prenom,
@@ -382,6 +397,10 @@ router.post("/", async (req, res) => {
       message: message || "",
       status: "pending",
       carteCadeaux,
+      montant,
+      montantCatalogue: catalog,
+      promotionId: null,
+      remisePourcent,
     };
 
     // Ajouter date et heure seulement si ce n'est pas une carte cadeaux

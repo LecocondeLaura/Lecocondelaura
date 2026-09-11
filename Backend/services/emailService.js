@@ -1,16 +1,24 @@
-// Prix des soins (aligné avec Frontend/src/Data/Service.json)
-export const getPriceForService = (serviceName) => {
-  if (!serviceName) return null;
-  if (serviceName.includes("Découverte") || serviceName.includes("Decouverte"))
-    return 50;
-  if (serviceName.includes("Kodomo")) return 70;
-  if (serviceName.includes("Rituel Détente")) return 120;
-  if (serviceName.includes("Rituel Ultime")) return 140;
-  return null;
-};
+import {
+  getCatalogPrice as getPriceForService,
+  getAppointmentAmount,
+} from "./pricing.js";
 
-const formatPriceInEmail = (serviceName) => {
-  const price = getPriceForService(serviceName);
+export { getPriceForService };
+
+const formatPriceInEmail = (appointmentOrService) => {
+  if (appointmentOrService && typeof appointmentOrService === "object") {
+    const amount = getAppointmentAmount(appointmentOrService);
+    const catalog = appointmentOrService.montantCatalogue;
+    const pct = appointmentOrService.remisePourcent;
+    if (!amount) return "";
+    if (catalog && catalog > amount) {
+      return `${amount} € au lieu de ${catalog} €${
+        pct ? ` (−${pct} %)` : ""
+      }`;
+    }
+    return `${amount} €`;
+  }
+  const price = getPriceForService(appointmentOrService);
   return price != null ? `${price} €` : "";
 };
 
@@ -359,7 +367,7 @@ export const sendClientConfirmationEmail = async (appointment) => {
       },
     );
 
-    const priceStr = formatPriceInEmail(appointment.service);
+    const priceStr = formatPriceInEmail(appointment);
 
     // Contenu de l'email
     const mailOptions = {
@@ -680,7 +688,13 @@ export const sendGiftCardRequestEmail = async (appointment) => {
               <div class="info-box">
                 <p style="margin: 5px 0;"><span class="label">🌸 Soin :</span> ${appointment.service}</p>
                 <p style="margin: 5px 0;"><span class="label">👤 Pour :</span> ${appointment.prenom} ${appointment.nom}</p>
-                ${formatPriceInEmail(appointment.service) ? `<p style="margin: 5px 0;"><span class="label">💳 Prix :</span> ${formatPriceInEmail(appointment.service)}</p>` : ""}
+                ${formatPriceInEmail(appointment) ? `<p style="margin: 5px 0;"><span class="label">💳 Prix :</span> ${formatPriceInEmail(appointment)}</p>` : ""}
+                ${
+                  appointment.montant != null
+                    ? `<p style="margin: 12px 0 5px 0; font-size: 16px;"><strong>Montant à virer : ${appointment.montant} €</strong></p>`
+                    : ""
+                }
+
               </div>
 
               <p style="margin: 20px 0 15px 0;"><strong>Pour finaliser votre commande, veuillez effectuer le virement bancaire aux coordonnées suivantes :</strong></p>
@@ -717,7 +731,7 @@ Merci pour votre demande de carte cadeau !
 
 Soin : ${appointment.service}
 Pour : ${appointment.prenom} ${appointment.nom}
-${formatPriceInEmail(appointment.service) ? `Prix : ${formatPriceInEmail(appointment.service)}` : ""}
+${formatPriceInEmail(appointment) ? `Prix : ${formatPriceInEmail(appointment)}` : ""}
 
 Pour finaliser votre commande, veuillez effectuer le virement bancaire aux coordonnées suivantes :
 
@@ -885,7 +899,7 @@ export const sendGiftCardEmail = async (appointment, attachment, cardCode) => {
               <div class="info-box">
                 <p><span class="label">🌸 Soin :</span> ${appointment.service}</p>
                 <p><span class="label">👤 Pour :</span> ${appointment.prenom} ${appointment.nom}</p>
-                ${formatPriceInEmail(appointment.service) ? `<p><span class="label">💳 Prix :</span> ${formatPriceInEmail(appointment.service)}</p>` : ""}
+                ${formatPriceInEmail(appointment) ? `<p><span class="label">💳 Prix :</span> ${formatPriceInEmail(appointment)}</p>` : ""}
               </div>
 
               <div class="code-box">
@@ -928,7 +942,7 @@ Merci pour votre commande ! Votre carte cadeau est prête.
 
 Soin : ${appointment.service}
 Pour : ${appointment.prenom} ${appointment.nom}
-${formatPriceInEmail(appointment.service) ? `Prix : ${formatPriceInEmail(appointment.service)}` : ""}
+${formatPriceInEmail(appointment) ? `Prix : ${formatPriceInEmail(appointment)}` : ""}
 
 Numéro de la carte : ${cardCode}
 
@@ -1113,7 +1127,7 @@ export const sendCancellationEmail = async (appointment) => {
                 <p><span class="label">🌸 Soin :</span> ${appointment.service}</p>
                 <p><span class="label">📅 Date :</span> ${dateFormatted}</p>
                 <p><span class="label">🕐 Heure :</span> ${appointment.heure}</p>
-                ${formatPriceInEmail(appointment.service) ? `<p><span class="label">💳 Prix :</span> ${formatPriceInEmail(appointment.service)}</p>` : ""}
+                ${formatPriceInEmail(appointment) ? `<p><span class="label">💳 Prix :</span> ${formatPriceInEmail(appointment)}</p>` : ""}
               </div>
 
               <p>Nous sommes désolés pour ce désagrément. Si vous souhaitez prendre un nouveau rendez-vous, n'hésitez pas à nous contacter :</p>
@@ -1144,7 +1158,7 @@ Nous vous informons que votre rendez-vous a été annulé :
 Soin : ${appointment.service}
 Date : ${dateFormatted}
 Heure : ${appointment.heure}
-${formatPriceInEmail(appointment.service) ? `Prix : ${formatPriceInEmail(appointment.service)}` : ""}
+${formatPriceInEmail(appointment) ? `Prix : ${formatPriceInEmail(appointment)}` : ""}
 
 Nous sommes désolés pour ce désagrément. Si vous souhaitez prendre un nouveau rendez-vous, n'hésitez pas à nous contacter :
 
@@ -1920,4 +1934,35 @@ export const sendMobileQuoteClientConfirmation = async (quote) => {
     console.error("❌ Erreur confirmation devis mobile:", error.message);
     return false;
   }
+};
+
+export const sendPromoBroadcastEmail = async (client, message) => {
+  const transporter = createTransporter();
+  const first = (client.prenom || "bonjour").trim();
+  const safeMessage = String(message || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+  await transporter.sendMail({
+    from: getResendFrom(),
+    to: client.email,
+    subject: "Une offre du Cocon de Laura",
+    html: `
+      <!DOCTYPE html>
+      <html><body style="font-family:Arial,sans-serif;color:#5a4343;max-width:600px;margin:0 auto;padding:20px;">
+        <div style="background:#f0cfcf;padding:24px;border-radius:16px 16px 0 0;text-align:center;">
+          <h1 style="color:#6e5656;margin:0;font-size:22px;">Le Cocon de Laura</h1>
+        </div>
+        <div style="background:#fff;padding:24px;border:1px solid #f0cfcf;border-top:none;border-radius:0 0 16px 16px;">
+          <p>Bonjour ${first},</p>
+          <p style="line-height:1.6;">${safeMessage}</p>
+          <p style="margin-top:24px;">À très bientôt,<br>Laura</p>
+          <p style="font-size:13px;color:#8b6f6f;">07 87 98 43 41 · lecocondelaura.fr</p>
+        </div>
+      </body></html>
+    `,
+    text: `Bonjour ${first},\n\n${message}\n\nLaura — Le Cocon de Laura`,
+  });
+  return true;
 };

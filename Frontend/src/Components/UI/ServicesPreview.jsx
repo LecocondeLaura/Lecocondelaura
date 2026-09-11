@@ -32,7 +32,7 @@ function ServicesPreview({ showDiscoverButton = true, hideHeader = false }) {
                 to="/services"
                 className="group mt-6 inline-flex items-center gap-2 font-body text-sm font-medium text-[#6e5656] underline-offset-4 hover:text-[#c97886] hover:underline"
               >
-                Voir tous les détails
+                Découvrir les soins
                 <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             )}
