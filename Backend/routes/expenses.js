@@ -3,7 +3,7 @@ import Expense from "../models/Expense.js";
 import Appointment from "../models/Appointment.js";
 import MobileQuote from "../models/MobileQuote.js";
 import { authenticateToken } from "../middleware/auth.js";
-import { getPriceForService } from "../services/emailService.js";
+import { getAppointmentAmount } from "../services/pricing.js";
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ const getYearRange = (year) => {
 };
 
 const sumRevenue = (list) =>
-  list.reduce((acc, apt) => acc + (getPriceForService(apt.service) || 0), 0);
+  list.reduce((acc, apt) => acc + (getAppointmentAmount(apt) || 0), 0);
 
 const mobileQuoteRevenueDate = (q) => {
   if (Array.isArray(q.joursIntervention) && q.joursIntervention.length) {
@@ -60,11 +60,11 @@ const computeRevenue = async (start, end) => {
     Appointment.find({
       ...paidMassageFilter,
       date: { $gte: start, $lte: end },
-    }).select("service date prenom nom moyenPaiement"),
+    }).select("service date prenom nom moyenPaiement montant"),
     Appointment.find({
       ...paidGiftCardFilter,
       createdAt: { $gte: start, $lte: end },
-    }).select("service createdAt prenom nom codeCarteCadeau"),
+    }).select("service createdAt prenom nom codeCarteCadeau montant"),
     MobileQuote.find({
       $or: [
         { paiementEffectue: true, montant: { $gt: 0 } },
@@ -148,7 +148,7 @@ router.get("/summary", authenticateToken, async (req, res) => {
     const movements = [];
 
     revenue.massageItems.forEach((apt) => {
-      const amount = getPriceForService(apt.service) || 0;
+      const amount = getAppointmentAmount(apt);
       if (!amount) return;
       movements.push({
         id: `soin-${apt._id}`,
@@ -163,7 +163,7 @@ router.get("/summary", authenticateToken, async (req, res) => {
     });
 
     revenue.giftCardItems.forEach((apt) => {
-      const amount = getPriceForService(apt.service) || 0;
+      const amount = getAppointmentAmount(apt);
       if (!amount) return;
       movements.push({
         id: `carte-${apt._id}`,

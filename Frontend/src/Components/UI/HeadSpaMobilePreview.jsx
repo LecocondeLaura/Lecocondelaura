@@ -37,7 +37,7 @@ function HeadSpaMobilePreview() {
               to="/head-spa-mobile"
               className="group inline-flex items-center gap-2 rounded-full bg-[#6e5656] px-8 py-3.5 font-body text-sm font-semibold tracking-[0.08em] text-white transition hover:bg-[#5a4343]"
             >
-              Découvrir
+              Découvrir le Head Spa Mobile
               <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>

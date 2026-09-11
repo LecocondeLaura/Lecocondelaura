@@ -16,6 +16,7 @@ import DashboardLayout from "../Components/Dashboard/DashboardLayout";
 import CreateGiftCardModal from "../Components/Dashboard/CreateGiftCardModal";
 import { useToast } from "../contexts/ToastContext";
 import { useNotifications } from "../contexts/NotificationContext";
+import { getCatalogPrice } from "../Data/bookingServices.js";
 
 function GiftCards() {
   const [appointments, setAppointments] = useState([]);
@@ -749,6 +750,38 @@ function GiftCards() {
                         </span>{" "}
                         {giftCard.service}
                       </p>
+                      {(() => {
+                        const catalog =
+                          giftCard.montantCatalogue ||
+                          getCatalogPrice(giftCard.service);
+                        const price = giftCard.montant ?? catalog;
+                        if (price == null) return null;
+                        const onPromo = catalog && price < catalog;
+                        return (
+                          <p className="mt-1 text-sm text-gray-700">
+                            <span className="font-semibold text-[#8b6f6f]">
+                              Montant :
+                            </span>{" "}
+                            {onPromo ? (
+                              <>
+                                <span className="font-semibold text-[#c97886]">
+                                  {price}€
+                                </span>
+                                <span className="ml-2 text-gray-400 line-through">
+                                  {catalog}€
+                                </span>
+                                {giftCard.remisePourcent ? (
+                                  <span className="ml-2 rounded-full bg-[#c97886] px-2 py-0.5 text-[11px] font-semibold text-white">
+                                    −{giftCard.remisePourcent} %
+                                  </span>
+                                ) : null}
+                              </>
+                            ) : (
+                              `${price}€`
+                            )}
+                          </p>
+                        );
+                      })()}
                       {giftCard.codeCarteCadeau && (
                         <p className="text-sm text-gray-600 mt-1">
                           <span className="font-semibold">Code :</span>{" "}

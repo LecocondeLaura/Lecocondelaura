@@ -12,6 +12,7 @@ import {
   TruckIcon,
   CameraIcon,
   StarIcon,
+  TagIcon,
 } from "@heroicons/react/24/outline";
 import { useNotifications } from "../../contexts/NotificationContext";
 
@@ -64,6 +65,12 @@ const MENU_SECTIONS = [
         path: "/dashboard/head-spa-mobile",
         icon: TruckIcon,
         notificationKey: "mobileQuotes",
+      },
+      {
+        name: "Message clientes",
+        path: "/dashboard/promotions",
+        icon: TagIcon,
+        notificationKey: null,
       },
       {
         name: "Comptes",

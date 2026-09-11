@@ -35,6 +35,7 @@ function Contact() {
   const [isHeadSpaMobileDay, setIsHeadSpaMobileDay] = useState(false);
   const [availabilityError, setAvailabilityError] = useState(false);
   const [carteCadeaux, setCarteCadeaux] = useState(false);
+  const services = BOOKING_SERVICES;
 
   const allTimes = ["09:00", "11:00", "14:00", "16:00", "18:00"];
 
@@ -319,8 +320,6 @@ function Contact() {
     }
   };
 
-  const services = BOOKING_SERVICES;
-
   const inputClass =
     "w-full rounded-xl border border-ink/10 bg-washi/60 px-4 py-3.5 font-body text-ink outline-none transition-all duration-300 placeholder:text-ink/35 focus:border-sakura-mid focus:bg-white focus:ring-4 focus:ring-sakura-soft/40";
 
@@ -341,8 +340,8 @@ function Contact() {
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-6">
         <header className="mb-12 text-center md:mb-16">
           <h1 className="font-display text-4xl font-medium text-ink sm:text-5xl md:text-6xl">
-            Réservez votre{" "}
-            <span className="font-alex-brush text-sakura-deep">Head Spa</span>
+            Réserver un{" "}
+            <span className="font-alex-brush text-sakura-deep">soin</span>
           </h1>
           <div className="mx-auto mt-6 h-px w-16 bg-sakura-mid/70" />
           <p className="mx-auto mt-6 max-w-xl font-body text-base leading-relaxed text-ink/60">
