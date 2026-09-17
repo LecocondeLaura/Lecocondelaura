@@ -46,11 +46,14 @@ export const addAppointment = async (appointment) => {
 };
 
 // Obtenir les horaires disponibles pour une date donnée
-export const getAvailableTimesForDate = async (date, allTimes) => {
+export const getAvailableTimesForDate = async (date, allTimes, options = {}) => {
   try {
     const dateStr = new Date(date).toISOString().split("T")[0];
+    const params = new URLSearchParams();
+    if (options.excludeId) params.set("excludeId", options.excludeId);
+    const qs = params.toString();
     const response = await fetch(
-      `${API_BASE_URL}/appointments/available/${dateStr}`
+      `${API_BASE_URL}/appointments/available/${dateStr}${qs ? `?${qs}` : ""}`,
     );
     const data = await response.json();
 

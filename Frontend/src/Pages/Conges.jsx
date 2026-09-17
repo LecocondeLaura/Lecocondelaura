@@ -10,14 +10,13 @@ import {
 import API_BASE_URL from "../config/api.config.js";
 import DashboardLayout from "../Components/Dashboard/DashboardLayout";
 import { useToast } from "../contexts/ToastContext";
+import { ALL_SLOT_TIMES } from "../utils/appointmentSlots.js";
 
-const PICKABLE_SLOTS = [
-  { value: "09:00", label: "9h00" },
-  { value: "11:00", label: "11h00" },
-  { value: "14:00", label: "14h00" },
-  { value: "16:00", label: "16h00" },
-  { value: "18:00", label: "18h00" },
-];
+const PICKABLE_SLOTS = ALL_SLOT_TIMES.map((value) => {
+  const [h, m] = value.split(":");
+  const label = m === "00" ? `${Number(h)}h00` : `${Number(h)}h${m}`;
+  return { value, label };
+});
 
 function Conges() {
   const [closures, setClosures] = useState([]);

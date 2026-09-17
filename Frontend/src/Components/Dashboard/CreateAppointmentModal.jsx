@@ -10,6 +10,10 @@ import {
 import API_BASE_URL from "../../config/api.config.js";
 import { getAvailableTimesForDate } from "../../utils/appointments.js";
 import { BOOKING_SERVICES } from "../../Data/bookingServices.js";
+import {
+  ALL_SLOT_TIMES,
+  filterSlotsForService,
+} from "../../utils/appointmentSlots.js";
 
 function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -30,49 +34,6 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
 
   const services = BOOKING_SERVICES;
 
-  const allTimes = ["09:00", "11:00", "14:00", "16:00", "18:00"];
-
-  // Fonction pour obtenir la durée du soin en minutes
-  const getServiceDuration = (serviceName) => {
-    if (serviceName.includes("30min")) return 30;
-    if (serviceName.includes("60min")) return 60;
-    if (serviceName.includes("90min")) return 90;
-    return 60;
-  };
-
-  // Fonction pour obtenir les créneaux bloqués selon la durée du soin
-  const getBlockedSlots = (startTime, serviceName) => {
-    const duration = getServiceDuration(serviceName);
-    let blockedSlots = [startTime];
-
-    const timeToMinutes = (time) => {
-      const [hours, minutes] = time.split(":").map(Number);
-      return hours * 60 + minutes;
-    };
-
-    const startMinutes = timeToMinutes(startTime);
-    let blockedMinutes;
-
-    if (duration === 30) {
-      blockedMinutes = startMinutes + 60;
-    } else if (duration === 60) {
-      blockedMinutes = startMinutes + 90;
-    } else if (duration === 90) {
-      blockedMinutes = startMinutes + 120;
-    }
-
-    allTimes.forEach((time) => {
-      const timeMinutes = timeToMinutes(time);
-      if (timeMinutes >= startMinutes && timeMinutes < blockedMinutes) {
-        if (!blockedSlots.includes(time)) {
-          blockedSlots.push(time);
-        }
-      }
-    });
-
-    return blockedSlots;
-  };
-
   // Charger les créneaux disponibles quand la date ou le service change
   useEffect(() => {
     const fetchAvailableTimes = async () => {
@@ -80,7 +41,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
         try {
           const result = await getAvailableTimesForDate(
             formData.date,
-            allTimes,
+            ALL_SLOT_TIMES,
           );
           setAvailabilityError(result.hasError === true);
 
@@ -92,26 +53,11 @@ function CreateAppointmentModal({ isOpen, onClose, onSuccess }) {
           }
           setIsDateClosed(false);
 
-          const closureBlockedSet = new Set(result.closureBlockedTimes || []);
-
-          const allBlockedSlots = new Set();
-          result.reservedAppointments.forEach((apt) => {
-            const blocked = getBlockedSlots(apt.heure, apt.service);
-            blocked.forEach((slot) => allBlockedSlots.add(slot));
-          });
-
-          let filtered = allTimes.filter(
-            (time) =>
-              !closureBlockedSet.has(time) && !allBlockedSlots.has(time),
-          );
-
-          filtered = filtered.filter((time) => {
-            const wouldBlock = getBlockedSlots(time, formData.service);
-            return !wouldBlock.some((blockedTime) =>
-              result.reservedAppointments.some(
-                (apt) => apt.heure === blockedTime,
-              ),
-            );
+          const filtered = filterSlotsForService({
+            allTimes: ALL_SLOT_TIMES,
+            service: formData.service,
+            reservedAppointments: result.reservedAppointments || [],
+            closureBlockedTimes: result.closureBlockedTimes || [],
           });
 
           setAvailableTimes(filtered);
