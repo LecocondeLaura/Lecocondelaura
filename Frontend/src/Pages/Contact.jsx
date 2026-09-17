@@ -12,6 +12,10 @@ import {
 } from "../utils/appointments";
 import API_BASE_URL from "../config/api.config.js";
 import { BOOKING_SERVICES } from "../Data/bookingServices.js";
+import {
+  ALL_SLOT_TIMES,
+  filterSlotsForService,
+} from "../utils/appointmentSlots.js";
 
 function Contact() {
   const [searchParams] = useSearchParams();
@@ -37,7 +41,7 @@ function Contact() {
   const [carteCadeaux, setCarteCadeaux] = useState(false);
   const services = BOOKING_SERVICES;
 
-  const allTimes = ["09:00", "11:00", "14:00", "16:00", "18:00"];
+  const allTimes = ALL_SLOT_TIMES;
 
   // Préremplir le soin si on arrive depuis une card « Réserver »
   useEffect(() => {
@@ -94,45 +98,6 @@ function Contact() {
     });
   };
 
-  const getServiceDuration = (serviceName) => {
-    if (serviceName.includes("30min")) return 30;
-    if (serviceName.includes("60min")) return 60;
-    if (serviceName.includes("90min")) return 90;
-    return 60;
-  };
-
-  const getBlockedSlots = (startTime, serviceName) => {
-    const duration = getServiceDuration(serviceName);
-    let blockedSlots = [startTime];
-
-    const timeToMinutes = (time) => {
-      const [hours, minutes] = time.split(":").map(Number);
-      return hours * 60 + minutes;
-    };
-
-    const startMinutes = timeToMinutes(startTime);
-    let blockedMinutes;
-
-    if (duration === 30) {
-      blockedMinutes = startMinutes + 60;
-    } else if (duration === 60) {
-      blockedMinutes = startMinutes + 90;
-    } else if (duration === 90) {
-      blockedMinutes = startMinutes + 120;
-    }
-
-    allTimes.forEach((time) => {
-      const timeMinutes = timeToMinutes(time);
-      if (timeMinutes >= startMinutes && timeMinutes < blockedMinutes) {
-        if (!blockedSlots.includes(time)) {
-          blockedSlots.push(time);
-        }
-      }
-    });
-
-    return blockedSlots;
-  };
-
   useEffect(() => {
     const fetchAvailableTimes = async () => {
       if (formData.date && formData.service) {
@@ -153,26 +118,11 @@ function Contact() {
           setIsDateClosed(false);
           setIsHeadSpaMobileDay(false);
 
-          const closureBlockedSet = new Set(result.closureBlockedTimes || []);
-
-          const allBlockedSlots = new Set();
-          result.reservedAppointments.forEach((apt) => {
-            const blocked = getBlockedSlots(apt.heure, apt.service);
-            blocked.forEach((slot) => allBlockedSlots.add(slot));
-          });
-
-          let filtered = allTimes.filter(
-            (time) =>
-              !closureBlockedSet.has(time) && !allBlockedSlots.has(time),
-          );
-
-          filtered = filtered.filter((time) => {
-            const wouldBlock = getBlockedSlots(time, formData.service);
-            return !wouldBlock.some((blockedTime) =>
-              result.reservedAppointments.some(
-                (apt) => apt.heure === blockedTime,
-              ),
-            );
+          let filtered = filterSlotsForService({
+            allTimes,
+            service: formData.service,
+            reservedAppointments: result.reservedAppointments || [],
+            closureBlockedTimes: result.closureBlockedTimes || [],
           });
 
           if (formData.date === getTodayStr()) {
@@ -249,35 +199,14 @@ function Contact() {
           return;
         }
 
-        const closureBlockedSet = new Set(result.closureBlockedTimes || []);
-        if (closureBlockedSet.has(formData.heure)) {
-          alert(
-            "Ce créneau n'est pas disponible. Veuillez choisir un autre horaire.",
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        const allBlockedSlots = new Set();
-        result.reservedAppointments.forEach((apt) => {
-          const blocked = getBlockedSlots(apt.heure, apt.service);
-          blocked.forEach((slot) => allBlockedSlots.add(slot));
+        const stillAvailable = filterSlotsForService({
+          allTimes,
+          service: formData.service,
+          reservedAppointments: result.reservedAppointments || [],
+          closureBlockedTimes: result.closureBlockedTimes || [],
         });
 
-        if (allBlockedSlots.has(formData.heure)) {
-          alert(
-            "Ce créneau n'est plus disponible. Veuillez choisir un autre horaire.",
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        const wouldBlock = getBlockedSlots(formData.heure, formData.service);
-        const wouldConflict = wouldBlock.some((blockedTime) =>
-          result.reservedAppointments.some((apt) => apt.heure === blockedTime),
-        );
-
-        if (wouldConflict) {
+        if (!stillAvailable.includes(formData.heure)) {
           alert(
             "Ce créneau n'est plus disponible. Veuillez choisir un autre horaire.",
           );

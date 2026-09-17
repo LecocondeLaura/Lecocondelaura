@@ -547,6 +547,88 @@ Le Cocon de Laura
   }
 };
 
+const formatDateFr = (dateValue) => {
+  if (!dateValue) return "";
+  return new Date(dateValue).toLocaleDateString("fr-FR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+/** Email client : rendez-vous avancé ou décalé */
+export const sendRescheduleEmail = async (appointment, previous) => {
+  try {
+    const transporter = createTransporter();
+    const newDateFormatted = formatDateFr(appointment.date);
+    const oldDateFormatted = formatDateFr(previous?.date);
+    const priceStr = formatPriceInEmail(appointment);
+
+    const mailOptions = {
+      from: getResendFrom(),
+      to: appointment.email,
+      subject: `Votre rendez-vous a été modifié - Le Cocon de Laura`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <body style="font-family:Arial,sans-serif;color:#5a4343;max-width:600px;margin:0 auto;padding:20px;">
+            <div style="background:#f0cfcf;padding:24px;border-radius:16px 16px 0 0;text-align:center;">
+              <h1 style="color:#6e5656;margin:0;font-size:22px;">Rendez-vous modifié</h1>
+              <p style="color:#6e5656;margin:8px 0 0;">Le Cocon de Laura</p>
+            </div>
+            <div style="background:#fff;padding:24px;border:1px solid #f0cfcf;border-top:none;border-radius:0 0 16px 16px;">
+              <p>Bonjour ${appointment.prenom},</p>
+              <p>Votre rendez-vous a été reprogrammé. Voici le nouveau créneau :</p>
+              <div style="background:#faf6f6;padding:16px;border-radius:12px;margin:16px 0;">
+                <p style="margin:6px 0;"><strong>Soin :</strong> ${appointment.service}</p>
+                <p style="margin:6px 0;"><strong>Nouvelle date :</strong> ${newDateFormatted}</p>
+                <p style="margin:6px 0;"><strong>Nouvelle heure :</strong> ${appointment.heure}</p>
+                ${priceStr ? `<p style="margin:6px 0;"><strong>Prix :</strong> ${priceStr}</p>` : ""}
+              </div>
+              ${
+                oldDateFormatted || previous?.heure
+                  ? `<p style="font-size:14px;color:#8b6f6f;">Ancien créneau : ${oldDateFormatted}${
+                      previous?.heure ? ` à ${previous.heure}` : ""
+                    }</p>`
+                  : ""
+              }
+              <p>Si ce nouveau créneau ne vous convient pas, contactez-nous :</p>
+              <p style="font-size:14px;">📞 07 87 98 43 41<br>📧 lecocondelaura17@gmail.com<br>📍 70 rue Sadi Carnot, 17500 Jonzac</p>
+              <p style="margin-top:24px;">À très bientôt,<br>Le Cocon de Laura</p>
+            </div>
+          </body>
+        </html>
+      `,
+      text: `Bonjour ${appointment.prenom},
+
+Votre rendez-vous a été reprogrammé.
+
+Soin : ${appointment.service}
+Nouvelle date : ${newDateFormatted}
+Nouvelle heure : ${appointment.heure}
+${priceStr ? `Prix : ${priceStr}` : ""}
+${
+  oldDateFormatted || previous?.heure
+    ? `\nAncien créneau : ${oldDateFormatted}${previous?.heure ? ` à ${previous.heure}` : ""}`
+    : ""
+}
+
+Contact : 07 87 98 43 41 · lecocondelaura17@gmail.com
+
+À très bientôt,
+Le Cocon de Laura`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Email de reprogrammation envoyé à ${appointment.email}`);
+    return true;
+  } catch (error) {
+    console.error("❌ Email de reprogrammation:", error.message);
+    return false;
+  }
+};
+
 // Envoyer un email initial pour une carte cadeaux (avec RIB, sans PDF)
 export const sendGiftCardRequestEmail = async (appointment) => {
   try {

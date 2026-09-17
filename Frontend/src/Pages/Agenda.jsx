@@ -296,14 +296,18 @@ function Agenda() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ date, heure }),
-        }
+        },
       );
 
       const data = await response.json();
       if (data.success) {
-        showSuccess("Rendez-vous reprogrammé");
+        showSuccess(
+          data.emailSent
+            ? "Rendez-vous reprogrammé — email envoyé à la cliente"
+            : data.message || "Rendez-vous reprogrammé",
+        );
         setAppointments((prev) =>
-          prev.map((apt) => (apt._id === appointmentId ? data.data : apt))
+          prev.map((apt) => (apt._id === appointmentId ? data.data : apt)),
         );
         if (selectedAppointment && selectedAppointment._id === appointmentId) {
           setSelectedAppointment(data.data);
@@ -315,6 +319,53 @@ function Agenda() {
     } catch (error) {
       console.error("Erreur lors de la reprogrammation:", error);
       showError("Erreur lors de la reprogrammation");
+    }
+  };
+
+  const handleSaveNotes = async (appointmentId, notes) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_BASE_URL}/appointments/${appointmentId}/notes`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ notes }),
+        },
+      );
+      const data = await response.json();
+      if (data.success) {
+        const savedNotes =
+          data.data?.notes !== undefined ? data.data.notes : notes;
+        showSuccess("Note enregistrée");
+        setAppointments((prev) =>
+          prev.map((apt) =>
+            String(apt._id) === String(appointmentId)
+              ? { ...apt, ...(data.data || {}), notes: savedNotes }
+              : apt,
+          ),
+        );
+        if (
+          selectedAppointment &&
+          String(selectedAppointment._id) === String(appointmentId)
+        ) {
+          setSelectedAppointment((prev) => ({
+            ...prev,
+            ...(data.data || {}),
+            notes: savedNotes,
+          }));
+        }
+        return true;
+      }
+      showError(data.message || "Impossible d’enregistrer la note");
+      return false;
+    } catch (error) {
+      console.error("Erreur note rendez-vous:", error);
+      showError("Impossible d’enregistrer la note");
+      return false;
     }
   };
 
@@ -330,6 +381,7 @@ function Agenda() {
           onUpdateMoyenPaiement={handleUpdateMoyenPaiement}
           onUpdateCodeCarteCadeau={handleUpdateCodeCarteCadeau}
           onReschedule={handleRescheduleAppointment}
+          onSaveNotes={handleSaveNotes}
         />
       )}
       <CreateAppointmentModal

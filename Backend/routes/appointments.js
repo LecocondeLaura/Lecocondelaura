@@ -12,6 +12,7 @@ import {
   sendCancellationNotification,
   sendGiftCardReminderEmail,
   sendFollowUpEmail,
+  sendRescheduleEmail,
 } from "../services/emailService.js";
 import { getAppointmentAmount, getCatalogPrice } from "../services/pricing.js";
 import {
@@ -20,6 +21,7 @@ import {
   getCustomGiftCardImage,
 } from "../services/giftCardService.js";
 import Closure from "../models/Closure.js";
+import { ALL_SLOT_TIMES } from "../services/slotTimes.js";
 
 const router = express.Router();
 
@@ -250,13 +252,8 @@ router.get("/stats/revenue", authenticateToken, async (req, res) => {
 router.get("/available/:date", async (req, res) => {
   try {
     const { date } = req.params;
-    const allTimes = [
-      "09:00",
-      "11:00",
-      "14:00",
-      "16:00",
-      "18:00",
-    ];
+    const excludeId = req.query.excludeId || null;
+    const allTimes = ALL_SLOT_TIMES;
 
     const blockInfo = await Closure.getBlockInfoForDate(date);
     const closureBlocked = blockInfo.blocked;
@@ -278,20 +275,26 @@ router.get("/available/:date", async (req, res) => {
       });
     }
 
-    // Récupérer les rendez-vous pour cette date
     const { start: startOfDay, end: endOfDay } = getUtcDayRange(date);
 
-    const reservedAppointments = await Appointment.find({
+    const query = {
       date: {
         $gte: startOfDay,
         $lte: endOfDay,
       },
       status: { $in: ["pending", "confirmed", "completed"] },
-    }).select("heure service");
+    };
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+
+    const reservedAppointments = await Appointment.find(query).select(
+      "_id heure service",
+    );
 
     const reservedTimes = reservedAppointments.map((apt) => apt.heure);
     const availableTimes = timesAfterClosures.filter(
-      (time) => !reservedTimes.includes(time)
+      (time) => !reservedTimes.includes(time),
     );
 
     res.json({
@@ -530,7 +533,7 @@ router.patch("/:id/status", async (req, res) => {
   }
 });
 
-// PATCH - Reprogrammer un rendez-vous (date/heure, protégé)
+// PATCH - Reprogrammer un rendez-vous (date/heure, protégé) + email client
 router.patch("/:id/reschedule", authenticateToken, async (req, res) => {
   try {
     const { date, heure } = req.body;
@@ -560,6 +563,12 @@ router.patch("/:id/reschedule", authenticateToken, async (req, res) => {
         message: "Impossible de reprogrammer un rendez-vous annulé",
       });
     }
+    if (appointment.status === "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "Impossible de reprogrammer un rendez-vous déjà effectué",
+      });
+    }
 
     const currentDate = appointment.date
       ? new Date(appointment.date).toISOString().split("T")[0]
@@ -569,6 +578,7 @@ router.patch("/:id/reschedule", authenticateToken, async (req, res) => {
         success: true,
         message: "Aucune modification",
         data: appointment,
+        emailSent: false,
       });
     }
 
@@ -576,28 +586,79 @@ router.patch("/:id/reschedule", authenticateToken, async (req, res) => {
       date,
       heure,
       appointment.service,
-      appointment._id
+      appointment._id,
     );
     if (!isAvailable) {
       return res.status(409).json({
         success: false,
-        message: "Ce créneau n'est pas disponible",
+        message:
+          "Ce créneau n'est pas disponible (chevauchement avec un autre rendez-vous ou congé)",
       });
     }
+
+    const previous = {
+      date: appointment.date,
+      heure: appointment.heure,
+    };
 
     appointment.date = normalizeDateForStorage(date);
     appointment.heure = heure;
     const saved = await appointment.save();
 
+    let emailSent = false;
+    try {
+      emailSent = await sendRescheduleEmail(saved, previous);
+    } catch (emailError) {
+      console.error("Email reprogrammation:", emailError.message);
+    }
+
     res.json({
       success: true,
-      message: "Rendez-vous reprogrammé avec succès",
+      message: emailSent
+        ? "Rendez-vous reprogrammé — email envoyé à la cliente"
+        : "Rendez-vous reprogrammé (email non envoyé)",
       data: saved,
+      emailSent,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: "Erreur lors de la reprogrammation",
+      error: error.message,
+    });
+  }
+});
+
+// PATCH - Note interne sur un rendez-vous (protégé)
+router.patch("/:id/notes", authenticateToken, async (req, res) => {
+  try {
+    const notes =
+      req.body.notes === undefined || req.body.notes === null
+        ? ""
+        : String(req.body.notes).trim().slice(0, 2000);
+
+    const appointment = await Appointment.findByIdAndUpdate(
+      req.params.id,
+      { notes },
+      { new: true, runValidators: true },
+    ).select("-__v");
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Rendez-vous non trouvé",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Note enregistrée",
+      data: appointment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de l'enregistrement de la note",
       error: error.message,
     });
   }

@@ -6,10 +6,15 @@ import {
   CheckCircleIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
+import {
+  ALL_SLOT_TIMES,
+  MORNING_SLOTS,
+  AFTERNOON_SLOTS,
+} from "../../utils/appointmentSlots.js";
 
-const ALL_CAL_SLOTS = ["09:00", "11:00", "14:00", "16:00", "18:00"];
-const CAL_MORNING = ["09:00", "11:00"];
-const CAL_AFTERNOON = ["14:00", "16:00", "18:00"];
+const ALL_CAL_SLOTS = ALL_SLOT_TIMES;
+const CAL_MORNING = MORNING_SLOTS;
+const CAL_AFTERNOON = AFTERNOON_SLOTS;
 
 const MONTH_NAMES = [
   "Janvier",
@@ -117,21 +122,24 @@ function cellTone({
 function AppointmentCard({ apt, onAppointmentClick, spacious = false }) {
   const cancelled = apt.status === "cancelled";
   const completed = apt.status === "completed";
+  const noteText = String(apt.notes || "").trim();
 
   return (
     <button
       type="button"
       onClick={() => onAppointmentClick && onAppointmentClick(apt)}
-      className={`w-full rounded-xl text-left text-white transition-colors ${
+      className={`w-full rounded-xl text-left transition-colors ${
         spacious ? "px-4 py-3.5" : "px-2.5 py-2"
       } ${
         cancelled
-          ? "bg-gray-500 hover:bg-gray-600"
-          : "bg-[#8b6f6f] hover:bg-[#7a5f5f]"
+          ? "bg-gray-500 text-white hover:bg-gray-600"
+          : "bg-[#8b6f6f] text-white hover:bg-[#7a5f5f]"
       }`}
       aria-label={`${apt.heure}, ${apt.prenom} ${apt.nom}${
         apt.service ? `, ${apt.service}` : ""
-      }${completed ? ", effectué" : ""}${cancelled ? ", annulé" : ""}`}
+      }${noteText ? `, note : ${noteText}` : ""}${
+        completed ? ", effectué" : ""
+      }${cancelled ? ", annulé" : ""}`}
     >
       <div
         className={`flex items-center gap-1.5 font-bold ${
@@ -140,6 +148,14 @@ function AppointmentCard({ apt, onAppointmentClick, spacious = false }) {
       >
         <ClockIcon className={spacious ? "h-4 w-4" : "h-3.5 w-3.5"} />
         <span>{apt.heure}</span>
+        {noteText && (
+          <span
+            className="rounded bg-[#fff3cd] px-1.5 py-0.5 text-[10px] font-bold text-[#8b6f6f]"
+            title={noteText}
+          >
+            Note
+          </span>
+        )}
         {completed && (
           <CheckCircleIcon
             className="h-4 w-4 flex-shrink-0 text-green-300"
@@ -167,6 +183,15 @@ function AppointmentCard({ apt, onAppointmentClick, spacious = false }) {
           }`}
         >
           {apt.service}
+        </div>
+      )}
+      {noteText && (
+        <div
+          className={`mt-1.5 rounded-lg bg-[#fff3cd] font-medium leading-snug text-[#5a4343] ${
+            spacious ? "px-2.5 py-2 text-sm" : "px-2 py-1.5 text-[11px]"
+          }`}
+        >
+          {spacious ? noteText : noteText}
         </div>
       )}
     </button>

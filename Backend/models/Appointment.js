@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
 import Closure from "./Closure.js";
+import {
+  ALL_SLOT_TIMES,
+  appointmentsConflict,
+} from "../services/slotTimes.js";
 
 const appointmentSchema = new mongoose.Schema(
   {
@@ -102,6 +106,12 @@ const appointmentSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    notes: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: [2000, "La note ne peut pas dépasser 2000 caractères"],
+    },
     status: {
       type: String,
       enum: ["pending", "confirmed", "cancelled", "completed"],
@@ -135,57 +145,6 @@ const appointmentSchema = new mongoose.Schema(
 // Index pour éviter les doublons (même date + même heure)
 appointmentSchema.index({ date: 1, heure: 1, status: 1 });
 
-// Fonction pour obtenir la durée du soin en minutes
-const getServiceDuration = (serviceName) => {
-  if (!serviceName) return 60;
-  if (serviceName.includes("30min")) return 30;
-  if (serviceName.includes("60min")) return 60;
-  if (serviceName.includes("90min")) return 90;
-  return 60; // Par défaut
-};
-
-// Fonction pour obtenir les créneaux bloqués selon la durée du soin
-const getBlockedSlots = (startTime, serviceName) => {
-  const allTimes = ["09:00", "11:00", "14:00", "16:00", "18:00"];
-  const duration = getServiceDuration(serviceName);
-  let blockedSlots = [startTime];
-  
-  // Convertir l'heure en minutes depuis minuit
-  const timeToMinutes = (time) => {
-    const [hours, minutes] = time.split(":").map(Number);
-    return hours * 60 + minutes;
-  };
-  
-  const startMinutes = timeToMinutes(startTime);
-  let blockedMinutes;
-  
-  if (duration === 30) {
-    // Pour 30min → bloquer 1h (60 minutes)
-    blockedMinutes = startMinutes + 60;
-  } else if (duration === 60) {
-    // Pour 1h → bloquer 1h30 (90 minutes)
-    blockedMinutes = startMinutes + 90;
-  } else if (duration === 90) {
-    // Pour 1h30 → bloquer 2h (120 minutes)
-    blockedMinutes = startMinutes + 120;
-  } else {
-    blockedMinutes = startMinutes + 90; // Par défaut
-  }
-  
-  // Trouver tous les créneaux qui se chevauchent
-  allTimes.forEach((time) => {
-    const timeMinutes = timeToMinutes(time);
-    // Si le créneau commence avant la fin du soin, il est bloqué
-    if (timeMinutes >= startMinutes && timeMinutes < blockedMinutes) {
-      if (!blockedSlots.includes(time)) {
-        blockedSlots.push(time);
-      }
-    }
-  });
-  
-  return blockedSlots;
-};
-
 const isDateOnlyString = (value) =>
   typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
@@ -205,13 +164,17 @@ const getUtcDayRange = (dateInput) => {
   return { start, end };
 };
 
-// Vérifier si un créneau est disponible
+// Vérifier si un créneau est disponible (durée réelle du soin)
 appointmentSchema.statics.isTimeSlotAvailable = async function (
   date,
   heure,
   service,
-  excludeAppointmentId = null
+  excludeAppointmentId = null,
 ) {
+  if (!ALL_SLOT_TIMES.includes(heure)) {
+    return false;
+  }
+
   const closureBlocked = await Closure.getBlockedSlotTimesForDate(date);
   if (closureBlocked.has(heure)) {
     return false;
@@ -228,18 +191,6 @@ appointmentSchema.statics.isTimeSlotAvailable = async function (
 
   const { start: dayStart, end: dayEnd } = getUtcDayRange(date);
 
-  // Vérifier si le créneau exact est déjà pris sur la même journée
-  const existing = await this.findOne({
-    ...baseQuery,
-    date: { $gte: dayStart, $lte: dayEnd },
-    heure: heure,
-  });
-  
-  if (existing) {
-    return false;
-  }
-  
-  // Récupérer tous les rendez-vous de cette date
   const reservedAppointments = await this.find({
     ...baseQuery,
     date: {
@@ -247,19 +198,24 @@ appointmentSchema.statics.isTimeSlotAvailable = async function (
       $lte: dayEnd,
     },
   }).select("heure service");
-  
-  // Calculer les créneaux bloqués par notre nouveau rendez-vous
-  const newBlockedSlots = getBlockedSlots(heure, service);
-  
-  // Vérifier si notre nouveau rendez-vous chevauche avec un rendez-vous existant
+
+  const candidateStart = heure;
+  const candidateService = service;
+
   for (const apt of reservedAppointments) {
-    const existingBlockedSlots = getBlockedSlots(apt.heure, apt.service);
-    // Si un créneau bloqué par notre nouveau rendez-vous est dans les créneaux bloqués d'un rendez-vous existant
-    if (newBlockedSlots.some((slot) => existingBlockedSlots.includes(slot))) {
+    if (!apt.heure) continue;
+    if (
+      appointmentsConflict(
+        candidateStart,
+        candidateService,
+        apt.heure,
+        apt.service,
+      )
+    ) {
       return false;
     }
   }
-  
+
   return true;
 };
 

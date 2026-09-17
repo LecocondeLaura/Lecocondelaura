@@ -1,9 +1,10 @@
 import express from "express";
 import Closure from "../models/Closure.js";
 import { authenticateToken } from "../middleware/auth.js";
+import { ALL_SLOT_TIMES } from "../services/slotTimes.js";
 
 const router = express.Router();
-const ALLOWED_SLOTS = ["09:00", "11:00", "14:00", "16:00", "18:00"];
+const ALLOWED_SLOTS = ALL_SLOT_TIMES;
 const allowedSet = new Set(ALLOWED_SLOTS);
 
 const normalizeClosurePayload = (body) => {

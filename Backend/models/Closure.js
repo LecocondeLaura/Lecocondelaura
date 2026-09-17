@@ -1,4 +1,9 @@
 import mongoose from "mongoose";
+import {
+  ALL_SLOT_TIMES,
+  MORNING_SLOTS,
+  AFTERNOON_SLOTS,
+} from "../services/slotTimes.js";
 
 const closureSchema = new mongoose.Schema(
   {
@@ -38,12 +43,8 @@ const closureSchema = new mongoose.Schema(
       default: "closure",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
-
-const ALL_SLOT_TIMES = ["09:00", "11:00", "14:00", "16:00", "18:00"];
-const MORNING_SLOTS = ["09:00", "11:00"];
-const AFTERNOON_SLOTS = ["14:00", "16:00", "18:00"];
 
 function slotsForTimeScope(timeScope) {
   if (timeScope === "morning") return MORNING_SLOTS;
@@ -51,7 +52,6 @@ function slotsForTimeScope(timeScope) {
   return ALL_SLOT_TIMES;
 }
 
-// endDate doit être >= startDate ; hors mode custom, ne pas garder blockedSlots
 closureSchema.pre("save", function (next) {
   if (this.endDate < this.startDate) {
     this.endDate = this.startDate;
@@ -67,7 +67,6 @@ closureSchema.statics.getBlockedSlotTimesForDate = async function (dateInput) {
   return info.blocked;
 };
 
-/** Infos de blocage pour une date (créneaux + raison Head Spa Mobile) */
 closureSchema.statics.getBlockInfoForDate = async function (dateInput) {
   const dateStr =
     typeof dateInput === "string"
@@ -87,7 +86,7 @@ closureSchema.statics.getBlockInfoForDate = async function (dateInput) {
       let slots;
       if (scope === "custom") {
         slots = (c.blockedSlots || []).filter((t) =>
-          ALL_SLOT_TIMES.includes(t)
+          ALL_SLOT_TIMES.includes(t),
         );
       } else {
         slots = slotsForTimeScope(scope);
@@ -103,7 +102,6 @@ closureSchema.statics.getBlockInfoForDate = async function (dateInput) {
   return {
     blocked,
     hasHeadSpaMobile: hasHsm,
-    /** Journée entière bloquée uniquement par Head Spa Mobile */
     isHeadSpaMobileDay: allSlotsBlocked && hasHsm && !hasOther,
   };
 };
